@@ -1,0 +1,8 @@
+FROM postgres:16-alpine
+
+ENV POSTGRES_DB=library_db \
+    POSTGRES_USER=library_user \
+    POSTGRES_PASSWORD=library_pass
+
+COPY DBSchema.sql /docker-entrypoint-initdb.d/01_DBSchema.sql
+COPY DummyData.sql /docker-entrypoint-initdb.d/02_DummyData.sql
