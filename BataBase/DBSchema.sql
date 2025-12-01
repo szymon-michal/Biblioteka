@@ -2,6 +2,9 @@
 -- schema.sql – baza danych systemu bibliotecznego (PostgreSQL)
 -- ============================================================
 
+-- UWAGA: zapytania w backendzie mogą używać LOWER(...) na polach
+-- tekstowych (VARCHAR/TEXT). Nie używaj LOWER na kolumnach binarnych (BYTEA),
+-- bo w Postgresie powoduje to błąd "function lower(bytea) does not exist".
 
 SET search_path TO public;
 

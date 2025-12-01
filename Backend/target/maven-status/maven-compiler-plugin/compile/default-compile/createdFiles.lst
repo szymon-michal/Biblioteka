@@ -1,0 +1,4 @@
+com\library\model\entity\Author.class
+com\library\dto\AuthorDto.class
+com\library\dto\BookDto.class
+com\library\dto\CategoryDto.class

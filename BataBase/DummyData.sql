@@ -16,11 +16,11 @@ SET search_path TO public;
 
 INSERT INTO app_user (email, password_hash, first_name, last_name, role, status)
 VALUES
-  ('john.reader@example.com',  'bcrypt$john',  'John',  'Reader',  'READER', 'ACTIVE'),
-  ('anna.reader@example.com',  'bcrypt$anna',  'Anna',  'Reader',  'READER', 'ACTIVE'),
-  ('mark.reader@example.com',  'bcrypt$mark',  'Mark',  'Reader',  'READER', 'ACTIVE'),
-  ('admin.main@example.com',   'bcrypt$admin', 'Alice', 'Admin',   'ADMIN',  'ACTIVE'),
-  ('admin.second@example.com', 'bcrypt$admin', 'Bob',   'Admin',   'ADMIN',  'ACTIVE');
+  ('john.reader@example.com',  '$2a$10$lAZ.eTjQ.3hlptz8boQv7u/6EQ4HDteEnVuMY3QuqjbOuMrdz3nIK',  'John',  'Reader',  'READER', 'ACTIVE'),
+  ('anna.reader@example.com',  '6EQ4HDteEnVuMY3QuqjbOuMrdz3nIK',  'Anna',  'Reader',  'READER', 'ACTIVE'),
+  ('mark.reader@example.com',  '$2a$10$lAZ.eTjQ.3hlptz8boQv7u/6EQ4HDteEnVuMY3QuqjbOuMrdz3nIK',  'Mark',  'Reader',  'READER', 'ACTIVE'),
+  ('admin.main@example.com',   '$2a$10$lAZ.eTjQ.3hlptz8boQv7u/6EQ4HDteEnVuMY3QuqjbOuMrdz3nIK', 'Alice', 'Admin',   'ADMIN',  'ACTIVE'),
+  ('admin.second@example.com', '6EQ4HDteEnVuMY3QuqjbOuMrdz3nIK', 'Bob',   'Admin',   'ADMIN',  'ACTIVE');
 
 
 -- ============================================================
