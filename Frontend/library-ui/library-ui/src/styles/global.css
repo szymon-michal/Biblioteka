@@ -1,0 +1,66 @@
+:root{
+  --bg:#0b0f14;
+  --panel:#0f1620;
+  --panel2:#111b27;
+  --text:#e6eef9;
+  --muted:#9fb0c5;
+  --faint:#6f8197;
+  --border:rgba(255,255,255,.08);
+  --shadow:rgba(0,0,0,.35);
+  --accent:#b8d8ff;
+  --accent2:#d5ffe4;
+  --danger:#ffb5b5;
+  --radius:18px;
+  --radius2:12px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: radial-gradient(1000px 600px at 20% 0%, rgba(184,216,255,.08), transparent 60%),
+              radial-gradient(900px 700px at 100% 40%, rgba(213,255,228,.06), transparent 55%),
+              var(--bg);
+  color:var(--text);
+}
+
+code{color:var(--accent)}
+a{color:var(--accent)}
+
+.field{display:block}
+.label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px 2px}
+.input{
+  width:100%;
+  padding:12px 12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  color:var(--text);
+  outline:none;
+}
+.input:focus{border-color:rgba(184,216,255,.35);box-shadow:0 0 0 4px rgba(184,216,255,.08)}
+
+.button{
+  width:100%;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(184,216,255,.25);
+  background:linear-gradient(180deg, rgba(184,216,255,.18), rgba(184,216,255,.08));
+  color:var(--text);
+  cursor:pointer;
+  font-weight:600;
+}
+.button:disabled{opacity:.55;cursor:not-allowed}
+
+.buttonSecondary{
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.03);
+  color:var(--text);
+  cursor:pointer;
+  font-weight:600;
+}
+
+::selection{background:rgba(184,216,255,.22)}

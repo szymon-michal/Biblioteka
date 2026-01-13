@@ -1,0 +1,10 @@
+export type RouteKey =
+    | 'login'
+    | 'register'
+    | 'overview'
+    | 'dashboard'
+    | 'catalog'
+    | 'loans'
+    | 'members'
+    | 'explorer'
+    | 'settings'
