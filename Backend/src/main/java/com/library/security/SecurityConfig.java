@@ -3,6 +3,8 @@ package com.library.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -10,6 +12,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -21,33 +28,68 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-      .csrf(csrf -> csrf.disable())
-      .sessionManagement(session ->
-        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-      )
-      .authorizeHttpRequests(auth ->
-        auth
-          .requestMatchers("/api/auth/register", "/api/auth/login")
-          .permitAll()
-          .requestMatchers("/health", "/actuator/health")
-          .permitAll()
-          .requestMatchers(
-            "/api/books/**",
-            "/api/categories/**",
-            "/api/authors/**"
-          )
-          .permitAll()
-          .requestMatchers("/api/admin/**")
-          .hasRole("ADMIN")
-          .anyRequest()
-          .authenticated()
-      )
-      .addFilterBefore(
-        jwtAuthenticationFilter,
-        UsernamePasswordAuthenticationFilter.class
-      );
+            // ✅ enable CORS
+            .cors(Customizer.withDefaults())
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authorizeHttpRequests(auth ->
+                    auth
+                            // ✅ allow preflight requests everywhere
+                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                            // ✅ auth endpoints
+                            .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+
+                            // (optional) if your frontend still calls /auth/login, allow it too
+                            .requestMatchers("/auth/login", "/auth/register").permitAll()
+
+                            // health
+                            .requestMatchers("/health", "/actuator/health").permitAll()
+
+                            // public catalog endpoints
+                            .requestMatchers(
+                                    "/api/books/**",
+                                    "/api/categories/**",
+                                    "/api/authors/**"
+                            ).permitAll()
+
+                            // admin
+                            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                            .anyRequest().authenticated()
+            )
+            .addFilterBefore(
+                    jwtAuthenticationFilter,
+                    UsernamePasswordAuthenticationFilter.class
+            );
 
     return http.build();
+  }
+
+  // ✅ CORS policy for your frontend dev servers
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+
+    // allow Vite dev origins
+    config.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "http://localhost:5174"
+    ));
+
+    config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    config.setAllowedHeaders(List.of("*"));
+
+    // if you use Authorization: Bearer ..., this is fine
+    config.setExposedHeaders(List.of("Authorization"));
+
+    // set to true only if you use cookies; for pure JWT header it can be false
+    config.setAllowCredentials(false);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
   }
 
   @Bean

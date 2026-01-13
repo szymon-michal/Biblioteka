@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -36,6 +38,7 @@ public class AuthService {
         user.setLastName(request.getLastName());
         user.setRole(UserRole.READER);
         user.setStatus(UserStatus.ACTIVE);
+        user.setCreatedAt(LocalDateTime.now());
 
         AppUser savedUser = userRepository.save(user);
         return toUserDto(savedUser);
@@ -58,6 +61,7 @@ public class AuthService {
     }
 
     public UserDto getCurrentUser(Long userId) {
+
         AppUser user = userRepository.findById(userId)
                 .orElseThrow(() -> new AuthenticationException("User not found"));
         return toUserDto(user);
