@@ -135,7 +135,7 @@ export function LoansPage() {
 
             { field: "status", headerName: "Status", width: 120 },
             { field: "loanDate", headerName: "Wypożyczono", width: 120,  renderCell: (p) => formatDate(p.row?.loanDate), },
-            { field: "dueDate", headerName: "Termin", width: 120,  renderCell: (p) => formatDate(p.row?.loanDate), },
+            { field: "dueDate", headerName: "Termin", width: 120,  renderCell: (p) => formatDate(p.row?.dueDate), },
             {
                 field: "returnDatePretty",
                 headerName: "Zwrócono",

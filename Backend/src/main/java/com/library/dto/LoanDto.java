@@ -47,5 +47,4 @@ public class LoanDto {
         private String title;
         private List<AuthorDto> authors;
     }
-
 }
