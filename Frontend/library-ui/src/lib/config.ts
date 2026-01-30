@@ -27,11 +27,10 @@ export const config = {
   },
 
   get authLoginPath() {
-    return getEnv('VITE_AUTH_LOGIN_PATH') || '/api/auth/login'
+    return getEnv('VITE_AUTH_LOGIN_PATH') || '/auth/login'
   },
 
-  // ✅ DODAJ TO
   get authRegisterPath() {
-    return getEnv('VITE_AUTH_REGISTER_PATH') || '/api/auth/register'
+    return getEnv('VITE_AUTH_REGISTER_PATH') || '/auth/register'
   },
 }

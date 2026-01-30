@@ -1,83 +1,108 @@
-import { auth } from './auth'
-import { config } from './config'
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosError } from "axios";
 
-export type ApiError = {
-  status: number
-  message: string
-  details?: any
+/**
+ * API_BASE_URL:
+ * - domyślnie: http://localhost:8080/api
+ * - nadpisz przez .env: VITE_API_URL=http://localhost:8080/api
+ */
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL?.toString() || "http://localhost:8080/api";
+
+const ACCESS_TOKEN_KEY = "access_token";
+
+export const tokenStore = {
+  get(): string | null {
+    const t = localStorage.getItem(ACCESS_TOKEN_KEY);
+    return t && t.trim() ? t : null;
+  },
+  set(token: string) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  },
+  clear() {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+  },
+};
+
+export const api: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  // Jeśli refresh-token jest w httpOnly cookie -> ustaw true + backend CORS allowCredentials(true)
+  withCredentials: false,
+  headers: { "Content-Type": "application/json" },
+});
+
+export const authApi: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: false,
+  headers: { "Content-Type": "application/json" },
+});
+
+function shouldAttachAuth(config: AxiosRequestConfig): boolean {
+  const url = String(config.url || "");
+  if (url.startsWith("/auth/login")) return false;
+  if (url.startsWith("/auth/register")) return false;
+  if (url.startsWith("/auth/refresh-token")) return false;
+  return true;
 }
 
-async function parseMaybeJson(res: Response) {
-  const text = await res.text()
-  if (!text) return null
-  try {
-    return JSON.parse(text)
-  } catch {
-    return text
+api.interceptors.request.use((config) => {
+  if (!config.headers) config.headers = {};
+
+  if (shouldAttachAuth(config)) {
+    const token = tokenStore.get();
+    if (token) (config.headers as any).Authorization = `Bearer ${token}`;
   }
+
+  return config;
+});
+
+api.interceptors.response.use(
+  (r) => r,
+  (err: AxiosError) => {
+    // 401 = brak tokenu / zły token / brak roli
+    return Promise.reject(err);
+  }
+);
+
+/**
+ * LOGIN helper:
+ * backend zwykle zwraca { token: "..." } albo { access_token: "..." }
+ */
+export async function login(email: string, password: string) {
+  const res = await authApi.post("/auth/login", { email, password });
+  const data: any = res.data;
+
+  const token = data?.token || data?.access_token || data?.accessToken || data?.jwt || null;
+  if (!token) throw new Error("Brak tokenu w odpowiedzi /auth/login.");
+
+  tokenStore.set(token);
+  return data;
 }
 
-function isUsableToken(token: unknown): token is string {
-  if (typeof token !== 'string') return false
-  const t = token.trim()
-  if (!t) return false
-  if (t === 'null' || t === 'undefined') return false
-  return true
+export function logout() {
+  tokenStore.clear();
 }
 
-function joinUrl(base: string, path: string) {
-  if (!base) return path
-  if (!path) return base
-  const b = base.endsWith('/') ? base.slice(0, -1) : base
-  const p = path.startsWith('/') ? path : `/${path}`
-  return `${b}${p}`
-}
+/**
+ * Generic fetch wrapper using the authenticated api instance
+ */
+export async function apiFetch<T>(url: string, config?: AxiosRequestConfig & { method?: string; body?: any }): Promise<T> {
+  const method = config?.method?.toUpperCase() || 'GET';
+  const data = config?.body;
 
-function normalizePath(path: string) {
-  // Absolute URL? leave as-is
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-
-  let p = path.startsWith('/') ? path : `/${path}`
-
-  // Endpoints that are usually on the root (no /api prefix)
-  if (p.startsWith('/actuator/') || p.startsWith('/v3/') || p === '/v3/api-docs') return p
-
-  // Auth endpoints may be either /auth/* or /api/auth/* depending on backend
-  if (p.startsWith('/auth/')) return `/api${p}`
-
-  // Default: prefix with /api if missing
-  if (!p.startsWith('/api/')) p = `/api${p}`
-  return p
-}
-
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const url = path.startsWith('http') ? path : joinUrl(config.apiUrl, normalizePath(path))
-  const headers = new Headers(init.headers || {})
-  headers.set('Accept', 'application/json')
-
-  const token = auth.getToken()
-  if (isUsableToken(token)) {
-    headers.set('Authorization', `Bearer ${token}`)
+  let response;
+  if (method === 'GET') {
+    response = await api.get<T>(url, config);
+  } else if (method === 'POST') {
+    response = await api.post<T>(url, data, config);
+  } else if (method === 'PUT') {
+    response = await api.put<T>(url, data, config);
+  } else if (method === 'DELETE') {
+    response = await api.delete<T>(url, config);
+  } else if (method === 'PATCH') {
+    response = await api.patch<T>(url, data, config);
   } else {
-    headers.delete('Authorization')
+    response = await api.request<T>({ ...config, url, method, data });
   }
 
-  // If body is a plain object, JSON encode
-  let body = init.body
-  if (body && typeof body === 'object' && !(body instanceof FormData) && !(body instanceof Blob)) {
-    headers.set('Content-Type', 'application/json')
-    body = JSON.stringify(body)
-  }
-
-  const res = await fetch(url, { ...init, headers, body })
-  const data = await parseMaybeJson(res)
-
-  if (!res.ok) {
-    // NOTE: do NOT auto-clear token on 401/403.
-    // Many endpoints are intentionally public (or may be missing in dev),
-    // and auto-clearing makes it look like login "doesn't save" the token.
-    const msg = (data && (data.message || data.error || data.title)) || res.statusText || 'Request failed'
-    throw { status: res.status, message: msg, details: data } satisfies ApiError
-  }
-  return data as T
+  return response.data;
 }

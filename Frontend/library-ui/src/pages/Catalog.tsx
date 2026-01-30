@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Box, Paper, Stack, TextField, Typography } from '@mui/material'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { Box, Paper, Stack, TextField, Typography, IconButton, Tooltip, Snackbar, Alert } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridColDef } from '@mui/x-data-grid'
+import { LibraryAdd } from '@mui/icons-material'
 import { apiFetch } from '../lib/api'
 
 type AuthorDto = { id: number; firstName: string; lastName: string }
@@ -29,12 +30,14 @@ type Page<T> = {
 
 type Row = {
   id: number
+  bookId: number
   title: string
   isbn: string
   category: string
   authors: string
   year: string
   available: string
+  availableCopies: number
 }
 
 function toRow(b: BookDto): Row {
@@ -45,6 +48,7 @@ function toRow(b: BookDto): Row {
 
   return {
     id: b.id,
+    bookId: b.id,
     title: b.title ?? '',
     isbn: b.isbn ?? '',
     category: b.category?.name ?? '',
@@ -56,26 +60,98 @@ function toRow(b: BookDto): Row {
         : b.availableCopies != null
           ? String(b.availableCopies)
           : '',
+    availableCopies: b.availableCopies ?? 0,
   }
 }
 
-export default function Catalog() {
+export function CatalogPage() {
   const [query, setQuery] = useState('')
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  })
+
+  const handleBorrow = useCallback(async (bookId: number) => {
+    try {
+      await apiFetch('/loans', { method: 'POST', body: { bookId } })
+      setSnackbar({ open: true, message: 'Książka została wypożyczona!', severity: 'success' })
+      // Odśwież listę książek
+      const page = await apiFetch<Page<BookDto>>('/books?page=0&size=200')
+      const mapped = (page.content ?? []).map(toRow)
+      setRows(mapped)
+    } catch (e: any) {
+      setSnackbar({ open: true, message: e?.message ?? 'Nie udało się wypożyczyć książki', severity: 'error' })
+    }
+  }, [])
 
   const columns: GridColDef<Row>[] = useMemo(
     () => [
-      { field: 'id', headerName: 'ID', width: 90 },
-      { field: 'title', headerName: 'Tytuł', flex: 1, minWidth: 220 },
-      { field: 'authors', headerName: 'Autorzy', flex: 1, minWidth: 200 },
-      { field: 'category', headerName: 'Kategoria', width: 160 },
-      { field: 'year', headerName: 'Rok', width: 110 },
-      { field: 'isbn', headerName: 'ISBN', width: 170 },
-      { field: 'available', headerName: 'Dostępność', width: 140 },
+      { field: 'id', headerName: 'ID', width: 60 },
+      {
+        field: 'title',
+        headerName: 'Tytuł',
+        flex: 1,
+        minWidth: 150,
+        renderCell: (params) => (
+          <Tooltip title={params.value}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{params.value}</span>
+          </Tooltip>
+        ),
+      },
+      {
+        field: 'authors',
+        headerName: 'Autorzy',
+        width: 140,
+        renderCell: (params) => (
+          <Tooltip title={params.value}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{params.value}</span>
+          </Tooltip>
+        ),
+      },
+      { field: 'category', headerName: 'Kategoria', width: 100 },
+      { field: 'year', headerName: 'Rok', width: 70 },
+      { field: 'isbn', headerName: 'ISBN', width: 120 },
+      { field: 'available', headerName: 'Dostępne', width: 90 },
+      {
+        field: 'actions',
+        headerName: 'Wypożycz',
+        width: 90,
+        sortable: false,
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: (params) => (
+          <Tooltip
+            title={params.row.availableCopies > 0
+              ? 'Kliknij aby wypożyczyć tę książkę'
+              : 'Wszystkie egzemplarze są wypożyczone'}
+            arrow
+          >
+            <span>
+              <IconButton
+                size="medium"
+                disabled={params.row.availableCopies === 0}
+                onClick={() => handleBorrow(params.row.bookId)}
+                color="primary"
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s',
+                }}
+              >
+                <LibraryAdd fontSize="medium" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ),
+      },
     ],
-    []
+    [handleBorrow]
   )
 
   useEffect(() => {
@@ -108,9 +184,9 @@ export default function Catalog() {
   }, [rows, query])
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Stack spacing={2}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '100%' }}>
+      <Stack spacing={2} sx={{ height: '100%', overflow: 'hidden' }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" sx={{ flexShrink: 0 }}>
           <Typography variant="h5" sx={{ flex: 1 }}>
             Katalog
           </Typography>
@@ -122,7 +198,7 @@ export default function Catalog() {
           />
         </Stack>
 
-        <Paper sx={{ height: 650, width: '100%' }}>
+        <Paper sx={{ flex: 1, width: '100%', overflow: 'hidden', display: 'flex' }}>
           <DataGrid
             rows={filteredRows}
             columns={columns}
@@ -130,16 +206,29 @@ export default function Catalog() {
             disableRowSelectionOnClick
             pageSizeOptions={[25, 50, 100]}
             initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
-            sx={{ border: 0 }}
+            sx={{ border: 0, width: '100%' }}
           />
         </Paper>
 
         {error && (
-          <Typography color="error" variant="body2">
+          <Typography color="error" variant="body2" sx={{ flexShrink: 0 }}>
             {error}
           </Typography>
         )}
       </Stack>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
+
+export default CatalogPage

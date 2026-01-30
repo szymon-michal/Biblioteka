@@ -48,8 +48,9 @@ public class LoanController {
     }
 
     @PostMapping("/loans")
-    public ResponseEntity<LoanDto> createLoan(@CurrentUser Long userId, 
+    public ResponseEntity<LoanDto> createLoan(@CurrentUser Long userId,
                                               @Valid @RequestBody CreateLoanRequest request) {
+        System.out.println(">>> CREATE LOAN REQUEST: userId=" + userId + ", bookId=" + request.getBookId());
         LoanDto loan = loanService.createLoan(userId, request.getBookId());
         return ResponseEntity.status(HttpStatus.CREATED).body(loan);
     }

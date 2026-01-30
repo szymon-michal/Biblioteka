@@ -15,6 +15,14 @@ VALUES
     'Reader',
     'READER',
     'ACTIVE'
+  ),
+  (
+    'test@o2.pl',
+    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    'Test',
+    'User',
+    'READER',
+    'ACTIVE'
   )
 AS new
 ON DUPLICATE KEY UPDATE

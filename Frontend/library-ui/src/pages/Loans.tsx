@@ -10,7 +10,7 @@ export function LoansPage() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [path, setPath] = useState<string>('/api/loans')
+  const [path, setPath] = useState<string>('/me/loans')
   const [q, setQ] = useState('')
 
   useEffect(() => {
@@ -53,8 +53,8 @@ export function LoansPage() {
   }, [rows, q])
 
   return (
-    <Box>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mb: 2 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mb: 2, flexShrink: 0 }}>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5" sx={{ fontWeight: 900 }}>
             Wypożyczenia
@@ -69,8 +69,8 @@ export function LoansPage() {
         <TextField label="Szukaj" value={q} onChange={(e) => setQ(e.target.value)} size="small" sx={{ width: { xs: '100%', sm: 280 } }} />
       </Stack>
 
-      <Card sx={{ borderRadius: 4 }}>
-        <CardContent sx={{ p: 2 }}>
+      <Card sx={{ borderRadius: 4, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {loading ? (
             <Typography color="text.secondary">Ładowanie…</Typography>
           ) : error ? (
@@ -78,15 +78,16 @@ export function LoansPage() {
           ) : rows.length === 0 ? (
             <Typography color="text.secondary">Brak danych.</Typography>
           ) : (
-            <div style={{ height: 560, width: '100%' }}>
+            <Box sx={{ flex: 1, width: '100%', overflow: 'hidden' }}>
               <DataGrid
                 rows={filtered.map((r, i) => ({ id: r.id ?? i, ...r }))}
                 columns={cols}
                 disableRowSelectionOnClick
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 pageSizeOptions={[10, 20, 50]}
+                sx={{ height: '100%', border: 0 }}
               />
-            </div>
+            </Box>
           )}
         </CardContent>
       </Card>

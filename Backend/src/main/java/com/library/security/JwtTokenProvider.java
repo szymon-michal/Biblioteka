@@ -50,6 +50,11 @@ public class JwtTokenProvider {
     return claims.getSubject();
   }
 
+  public String getRoleFromToken(String token) {
+    Claims claims = getParser().parseClaimsJws(token).getBody();
+    return claims.get("role", String.class);
+  }
+
   public boolean validateToken(String token) {
     try {
       getParser().parseClaimsJws(token);

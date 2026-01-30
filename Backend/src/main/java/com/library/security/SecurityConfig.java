@@ -28,43 +28,41 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
+            // ✅ enable CORS
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-
-            // ✅ zamiast 403 przy braku auth -> 401
-            .exceptionHandling(ex -> ex
-                    .authenticationEntryPoint((req, res, e) -> res.sendError(401))
-            )
-
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
             .authorizeHttpRequests(auth ->
                     auth
                             // ✅ allow preflight requests everywhere
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                             // ✅ auth endpoints
-                            .requestMatchers("/api/auth/**").permitAll()
-                            .requestMatchers("/auth/**").permitAll()
+                            .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
 
-                            // ✅ health / actuator
-                            .requestMatchers("/health", "/actuator/**").permitAll()
+                            // (optional) if your frontend still calls /auth/login, allow it too
+                            .requestMatchers("/auth/login", "/auth/register").permitAll()
 
-                            // ✅ error endpoint
-                            .requestMatchers("/error", "/error/**").permitAll()
+                            // health and error
+                            .requestMatchers("/health", "/actuator/health", "/error").permitAll()
 
-                            // ✅ public catalog endpoints
-                            .requestMatchers(
+                            // public catalog endpoints - allow GET for everyone
+                            .requestMatchers(HttpMethod.GET,
                                     "/api/books/**",
                                     "/api/categories/**",
                                     "/api/authors/**"
                             ).permitAll()
 
-                            // admin
+                            // admin endpoints - only ADMIN role
                             .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                            // everything else requires auth
+                            // authenticated endpoints for logged-in users
+                            .requestMatchers("/api/loans/**", "/api/reservations/**", "/api/penalties/**", "/api/me/**").authenticated()
+
                             .anyRequest().authenticated()
             )
             .addFilterBefore(
@@ -75,10 +73,12 @@ public class SecurityConfig {
     return http.build();
   }
 
+  // ✅ CORS policy for your frontend dev servers
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
 
+    // allow Vite dev origins
     config.setAllowedOrigins(List.of(
             "http://localhost:5173",
             "http://localhost:5174"
@@ -86,7 +86,11 @@ public class SecurityConfig {
 
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
+
+    // if you use Authorization: Bearer ..., this is fine
     config.setExposedHeaders(List.of("Authorization"));
+
+    // set to true only if you use cookies; for pure JWT header it can be false
     config.setAllowCredentials(false);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
