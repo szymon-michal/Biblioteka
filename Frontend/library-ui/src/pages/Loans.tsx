@@ -3,6 +3,7 @@ import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { Box, Button, Stack, Alert, Snackbar, CircularProgress } from "@mui/material";
 import { api } from "../lib/api";
+import { formatAuthors, type AuthorDto } from "../lib/formatters";
 
 type LoanRow = {
     id: number;
@@ -16,7 +17,7 @@ type LoanRow = {
     bookCopy?: {
         id: number;
         inventoryCode: string;
-        book?: { id: number; title: string; author?: string | null } | null;
+        book?: { id: number; title: string; authors?: AuthorDto[] | null; } | null;
     } | null;
 };
 
@@ -116,12 +117,12 @@ export function LoansPage() {
                     params.row?.bookCopy?.book?.title ?? "—",
             },
             {
-                field: "author",
-                headerName: "Autor",
+                field: "authors",
+                headerName: "Autorzy",
                 width: 150,
                 sortable: false,
                 renderCell: (params: GridRenderCellParams<LoanRow>) =>
-                    params.row?.bookCopy?.book?.author ?? "—",
+                    formatAuthors(params.row?.bookCopy?.book?.authors),
             },
             {
                 field: "copyCode",

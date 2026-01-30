@@ -1,8 +1,10 @@
 package com.library.service;
 
+import com.library.dto.AuthorDto;
 import com.library.dto.LoanDto;
 import com.library.exception.ResourceNotFoundException;
 import com.library.model.entity.AppUser;
+import com.library.model.entity.Author;
 import com.library.model.entity.BookCopy;
 import com.library.model.entity.Loan;
 import com.library.model.enums.BookCopyStatus;
@@ -21,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -189,10 +193,14 @@ public class LoanService {
                 user.getLastName()
         );
 
+        var bookEntity = bookCopy.getBook();
+
         LoanDto.BookSummaryDto bookDto = new LoanDto.BookSummaryDto(
-                bookCopy.getBook().getId(),
-                bookCopy.getBook().getTitle()
+                bookEntity.getId(),
+                bookEntity.getTitle(),
+                toAuthorDtos(bookEntity.getAuthors())
         );
+
 
         LoanDto.BookCopySummaryDto bookCopyDto = new LoanDto.BookCopySummaryDto(
                 bookCopy.getId(),
@@ -210,5 +218,11 @@ public class LoanService {
                 loan.getStatus(),
                 loan.getExtensionsCount()
         );
+    }
+    private List<AuthorDto> toAuthorDtos(List<Author> authors) {
+        if (authors == null || authors.isEmpty()) return Collections.emptyList();
+        return authors.stream()
+                .map(a -> new AuthorDto(a.getId(), a.getFirstName(), a.getLastName()))
+                .collect(Collectors.toList());
     }
 }

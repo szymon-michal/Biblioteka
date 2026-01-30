@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -44,5 +45,7 @@ public class LoanDto {
     public static class BookSummaryDto {
         private Long id;
         private String title;
+        private List<AuthorDto> authors;
     }
+
 }

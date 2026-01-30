@@ -18,6 +18,26 @@ function safeJsonParse<T>(raw: string | null): T | null {
     return null
   }
 }
+export function getFirstName(): string {
+  const u = auth.getUser();
+  return (u?.firstName || "").trim();
+}
+
+export function getLastName(): string {
+  const u = auth.getUser();
+  return (u?.lastName || "").trim();
+}
+
+export function getEmail(): string {
+  const u = auth.getUser();
+  return (u?.email || "").trim();
+}
+
+export function getDisplayName(): string {
+  const full = `${getFirstName()} ${getLastName()}`.trim();
+  return full || getEmail() || "Użytkownik";
+}
+
 
 function decodeJwtPayload(token: string): any | null {
   try {
