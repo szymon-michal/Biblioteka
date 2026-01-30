@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
@@ -25,4 +26,9 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
                                        @Param("status") UserStatus status,
                                        @Param("search") String search,
                                        Pageable pageable);
+    @Query("select count(u) from AppUser u where u.createdAt >= :from and u.createdAt < :to")
+    long countNewUsersBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("select count(u) from AppUser u where u.status = com.library.model.enums.UserStatus.ACTIVE")
+    long countActiveUsers();
 }

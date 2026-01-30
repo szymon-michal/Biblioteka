@@ -11,8 +11,8 @@ import java.util.List;
 @AllArgsConstructor
 public class AdminSummaryDto {
     private long totalLoans;
-    private long newUsers;     // jeżeli nie masz pola createdAt u usera -> będzie 0
-    private long activeUsers;  // jeżeli nie liczysz -> będzie 0
+    private long newUsers;
+    private long activeUsers;
     private long overdueLoans;
 
     private List<MostPopularBookDto> mostPopularBooks;
@@ -23,6 +23,6 @@ public class AdminSummaryDto {
     public static class MostPopularBookDto {
         private Long bookId;
         private String title;
-        private long loansCount;
+        private Long loansCount;
     }
 }

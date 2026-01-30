@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminLoansPerDayDto {
-    private String day;      // np. "2026-01-30"
-    private Long loansCount; // ilość wypożyczeń
+public class AdminPopularBookDto {
+    private Long bookId;
+    private String title;
+    private Long loansCount;
 }
