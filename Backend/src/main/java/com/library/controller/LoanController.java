@@ -50,7 +50,6 @@ public class LoanController {
     @PostMapping("/loans")
     public ResponseEntity<LoanDto> createLoan(@CurrentUser Long userId,
                                               @Valid @RequestBody CreateLoanRequest request) {
-        // Zostawiam printa, bo jest mega przydatny do sprawdzenia czy POST ma JWT
         System.out.println(">>> CREATE LOAN REQUEST: userId=" + userId + ", bookId=" + request.getBookId());
 
         LoanDto loan = loanService.createLoan(userId, request.getBookId());
@@ -62,6 +61,13 @@ public class LoanController {
                                               @PathVariable Long id,
                                               @Valid @RequestBody ExtendLoanRequest request) {
         LoanDto loan = loanService.extendLoan(id, userId, request.getAdditionalDays());
+        return ResponseEntity.ok(loan);
+    }
+
+    @PostMapping("/loans/{id}/return")
+    public ResponseEntity<LoanDto> returnLoan(@CurrentUser Long userId,
+                                              @PathVariable Long id) {
+        LoanDto loan = loanService.returnBook(id, userId);
         return ResponseEntity.ok(loan);
     }
 }

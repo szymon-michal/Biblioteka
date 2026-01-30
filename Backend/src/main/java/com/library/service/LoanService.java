@@ -15,8 +15,10 @@ import com.library.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,9 +30,12 @@ public class LoanService {
     private final LoanRepository loanRepository;
     private final BookCopyRepository bookCopyRepository;
     private final ReservationRepository reservationRepository;
-    private final AppUserRepository appUserRepository; // <-- DODANE
+    private final AppUserRepository appUserRepository;
 
     public Page<LoanDto> getUserLoans(Long userId, List<LoanStatus> statuses, Pageable pageable) {
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Brak JWT / niezalogowany użytkownik");
+        }
         return loanRepository.findByUserIdAndStatusIn(userId, statuses, pageable)
                 .map(this::toDto);
     }
@@ -44,34 +49,36 @@ public class LoanService {
 
     @Transactional
     public LoanDto createLoan(Long userId, Long bookId) {
-        // Find available copy
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Brak JWT / niezalogowany użytkownik");
+        }
+        if (bookId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "bookId jest wymagane");
+        }
+
         BookCopy availableCopy = bookCopyRepository
                 .findFirstByBookIdAndStatus(bookId, BookCopyStatus.AVAILABLE)
-                .orElseThrow(() -> new IllegalStateException("No available copies"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Brak dostępnych egzemplarzy"));
 
-        // Pobierz użytkownika jako proxy (wystarczy do DTO; w transakcji dogra się z DB)
         AppUser userRef = appUserRepository.getReferenceById(userId);
 
-        // Create loan
         Loan loan = new Loan();
         loan.setUserId(userId);
         loan.setBookCopyId(availableCopy.getId());
         loan.setLoanDate(LocalDateTime.now());
-        loan.setDueDate(LocalDateTime.now().plusDays(30)); // 30-day loan period
+        loan.setDueDate(LocalDateTime.now().plusDays(30));
         loan.setStatus(LoanStatus.ACTIVE);
         loan.setExtensionsCount((short) 0);
 
-        // KLUCZ: podpinamy relacje, bo przy insertable=false Hibernate ich sam nie ustawi
+        // relacje (żeby toDto nie waliło NPE)
         loan.setUser(userRef);
         loan.setBookCopy(availableCopy);
 
         Loan savedLoan = loanRepository.save(loan);
 
-        // Update book copy status (u Ciebie “ilość” = dostępne kopie; ta kopia przestaje być AVAILABLE)
         availableCopy.setStatus(BookCopyStatus.BORROWED);
         bookCopyRepository.save(availableCopy);
 
-        // Mark reservation as fulfilled if exists
         reservationRepository.findByUserIdAndBookIdAndStatus(userId, bookId, ReservationStatus.ACTIVE)
                 .ifPresent(reservation -> {
                     reservation.setStatus(ReservationStatus.FULFILLED);
@@ -79,55 +86,91 @@ public class LoanService {
                     reservationRepository.save(reservation);
                 });
 
-        // Upewnij się, że DTO nie wywali NPE
         savedLoan.setUser(userRef);
         savedLoan.setBookCopy(availableCopy);
 
         return toDto(savedLoan);
     }
 
+    /**
+     * Limit: max 2 przedłużenia.
+     * Po przekroczeniu -> 409 + message dla frontu.
+     */
     @Transactional
     public LoanDto extendLoan(Long loanId, Long userId, Integer additionalDays) {
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Brak JWT / niezalogowany użytkownik");
+        }
+
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan not found"));
 
         if (!loan.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Not authorized to extend this loan");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nie możesz przedłużyć cudzego wypożyczenia");
         }
 
         if (loan.getStatus() != LoanStatus.ACTIVE) {
-            throw new IllegalStateException("Can only extend active loans");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Można przedłużyć tylko aktywne wypożyczenie");
         }
 
-        if (loan.getExtensionsCount() >= 2) { // Max 2 extensions
-            throw new IllegalStateException("Maximum extensions reached");
+        short current = loan.getExtensionsCount() == null ? 0 : loan.getExtensionsCount();
+        if (current >= 2) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Maksymalna liczba przedłużeń (2) została osiągnięta"
+            );
         }
 
-        loan.setDueDate(loan.getDueDate().plusDays(additionalDays));
-        loan.setExtensionsCount((short) (loan.getExtensionsCount() + 1));
+        int days = (additionalDays == null || additionalDays <= 0) ? 7 : additionalDays;
+
+        loan.setDueDate(loan.getDueDate().plusDays(days));
+        loan.setExtensionsCount((short) (current + 1));
 
         return toDto(loanRepository.save(loan));
     }
 
+    /**
+     * Zwrot: tylko właściciel i tylko gdy ACTIVE.
+     */
     @Transactional
-    public LoanDto returnBook(Long loanId) {
+    public LoanDto returnBook(Long loanId, Long userId) {
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Brak JWT / niezalogowany użytkownik");
+        }
+
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan not found"));
+
+        if (!loan.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nie możesz zwrócić cudzego wypożyczenia");
+        }
+
+        if (loan.getStatus() != LoanStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Można zwrócić tylko aktywne wypożyczenie");
+        }
 
         loan.setReturnDate(LocalDateTime.now());
         loan.setStatus(LoanStatus.RETURNED);
 
-        // Update book copy status
         BookCopy bookCopy = bookCopyRepository.findById(loan.getBookCopyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Book copy not found"));
+
         bookCopy.setStatus(BookCopyStatus.AVAILABLE);
         bookCopyRepository.save(bookCopy);
 
         return toDto(loanRepository.save(loan));
     }
 
+    /**
+     * Zachowuję starą sygnaturę (jeśli gdzieś wołasz ją bez usera),
+     * ale lepiej używać returnBook(id, userId).
+     */
+    @Transactional
+    public LoanDto returnBook(Long loanId) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Użyj endpointu /api/loans/{id}/return (wymaga JWT)");
+    }
+
     private LoanDto toDto(Loan loan) {
-        // Fallbacki gdyby kiedyś obiekt był zrobiony “ręcznie” bez relacji
         AppUser user = loan.getUser();
         if (user == null && loan.getUserId() != null) {
             user = appUserRepository.getReferenceById(loan.getUserId());

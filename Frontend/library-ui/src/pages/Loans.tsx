@@ -1,6 +1,7 @@
 import * as React from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
+import { Box, Button, Stack, Alert, Snackbar, CircularProgress } from "@mui/material";
 import { api } from "../lib/api";
 
 type LoanRow = {
@@ -15,7 +16,7 @@ type LoanRow = {
     bookCopy?: {
         id: number;
         inventoryCode: string;
-        book?: { id: number; title: string } | null;
+        book?: { id: number; title: string; author?: string | null } | null;
     } | null;
 };
 
@@ -24,35 +25,76 @@ type PageResponse<T> = { content: T[] };
 export function LoansPage() {
     const [rows, setRows] = React.useState<LoanRow[]>([]);
     const [loading, setLoading] = React.useState(false);
-    const [error, setError] = React.useState<string | null>(null);
+    const [busyId, setBusyId] = React.useState<number | null>(null); // spinner tylko dla klikniętego wiersza
+    const [err, setErr] = React.useState<string | null>(null);
+    const [toast, setToast] = React.useState<string | null>(null);
+
+    const load = React.useCallback(async () => {
+        setLoading(true);
+        setErr(null);
+        try {
+            const res = await api.get<PageResponse<LoanRow>>("/me/loans");
+            setRows(res.data?.content ?? []);
+        } catch (e: any) {
+            const status = e?.response?.status;
+            const msg =
+                e?.response?.data?.message ||
+                e?.response?.data?.error ||
+                e?.message ||
+                "Unknown error";
+            setErr(status ? `HTTP ${status}: ${msg}` : msg);
+            setRows([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     React.useEffect(() => {
-        const load = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                // baseURL w api.ts = http://localhost:8080/api
-                // więc tutaj dajemy /me/loans (bez /api)
-                const res = await api.get<PageResponse<LoanRow>>("/me/loans");
-                setRows(res.data?.content ?? []);
-            } catch (e: any) {
-                console.error(e);
-                const status = e?.response?.status;
-                const msg =
-                    e?.response?.data?.message ||
-                    e?.response?.data?.error ||
-                    e?.message ||
-                    "Unknown error";
-                setError(status ? `HTTP ${status}: ${msg}` : msg);
-                setRows([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         void load();
-    }, []);
+    }, [load]);
+
+    function apiErrorMessage(e: any, fallback: string) {
+        const status = e?.response?.status;
+        const msg =
+            e?.response?.data?.message ||
+            e?.response?.data?.error ||
+            e?.message ||
+            fallback;
+
+        // 409 = np. limit przedłużeń
+        if (status === 409) return msg; // backend message jest najlepszy
+        if (status === 403) return "Brak uprawnień do tej operacji.";
+        if (status === 401) return "Zaloguj się ponownie (token wygasł lub brak tokenu).";
+        return msg;
+    }
+
+    async function extendLoan(loanId: number, additionalDays = 7) {
+        setBusyId(loanId);
+        setErr(null);
+        try {
+            await api.post(`/loans/${loanId}/extend`, { additionalDays });
+            setToast(`Przedłużono wypożyczenie #${loanId} o ${additionalDays} dni`);
+            await load();
+        } catch (e: any) {
+            setErr(apiErrorMessage(e, "Nie udało się przedłużyć"));
+        } finally {
+            setBusyId(null);
+        }
+    }
+
+    async function returnLoan(loanId: number) {
+        setBusyId(loanId);
+        setErr(null);
+        try {
+            await api.post(`/loans/${loanId}/return`);
+            setToast(`Zwrócono książkę (wypożyczenie #${loanId})`);
+            await load();
+        } catch (e: any) {
+            setErr(apiErrorMessage(e, "Nie udało się zwrócić"));
+        } finally {
+            setBusyId(null);
+        }
+    }
 
     const columns = React.useMemo<GridColDef<LoanRow>[]>(
         () => [
@@ -66,7 +108,14 @@ export function LoansPage() {
                 renderCell: (params: GridRenderCellParams<LoanRow>) =>
                     params.row?.bookCopy?.book?.title ?? "—",
             },
-
+            {
+                field: "author",
+                headerName: "Autor",
+                width: 200,
+                sortable: false,
+                renderCell: (params: GridRenderCellParams<LoanRow>) =>
+                    params.row?.bookCopy?.book?.author ?? "—",
+            },
             {
                 field: "copyCode",
                 headerName: "Kod egz.",
@@ -76,23 +125,9 @@ export function LoansPage() {
                     params.row?.bookCopy?.inventoryCode ?? "—",
             },
 
-            {
-                field: "userName",
-                headerName: "Użytkownik",
-                width: 200,
-                sortable: false,
-                renderCell: (params: GridRenderCellParams<LoanRow>) => {
-                    const u = params.row?.user;
-                    if (!u) return "—";
-                    const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
-                    return name || `ID: ${u.id}`;
-                },
-            },
-
             { field: "status", headerName: "Status", width: 120 },
             { field: "loanDate", headerName: "Wypożyczono", width: 180 },
             { field: "dueDate", headerName: "Termin", width: 180 },
-
             {
                 field: "returnDatePretty",
                 headerName: "Zwrócono",
@@ -101,26 +136,67 @@ export function LoansPage() {
                 renderCell: (params: GridRenderCellParams<LoanRow>) =>
                     params.row?.returnDate ?? "—",
             },
-
             {
                 field: "extensionsCount",
                 headerName: "Przedłużenia",
                 width: 140,
+                sortable: false,
                 renderCell: (params: GridRenderCellParams<LoanRow>) =>
                     String(params.row?.extensionsCount ?? 0),
             },
+
+            {
+                field: "actions",
+                headerName: "Akcje",
+                width: 300,
+                sortable: false,
+                filterable: false,
+                renderCell: (params: GridRenderCellParams<LoanRow>) => {
+                    const r = params.row;
+                    const isActive = r.status === "ACTIVE";
+                    const canExtend = isActive && (r.extensionsCount ?? 0) < 2;
+                    const canReturn = isActive;
+                    const isBusy = busyId === r.id;
+
+                    return (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                disabled={!canExtend || isBusy}
+                                onClick={() => extendLoan(r.id, 7)}
+                            >
+                                Przedłuż +7
+                            </Button>
+                            <Button
+                                size="small"
+                                color="success"
+                                variant="contained"
+                                disabled={!canReturn || isBusy}
+                                onClick={() => {
+                                    if (confirm(`Na pewno zwrócić wypożyczenie #${r.id}?`)) {
+                                        void returnLoan(r.id);
+                                    }
+                                }}
+                            >
+                                Zwróć
+                            </Button>
+                            {isBusy ? <CircularProgress size={18} /> : null}
+                        </Stack>
+                    );
+                },
+            },
         ],
-        []
+        [busyId]
     );
 
     return (
-        <div style={{ width: "100%" }}>
-            <div style={{ marginBottom: 12, fontFamily: "monospace", fontSize: 12 }}>
-                <div>loading: {String(loading)}</div>
-                <div>error: {error ?? "null"}</div>
-                <div>rows.length: {rows.length}</div>
-                <div>firstRow.id: {rows[0]?.id ?? "—"}</div>
-            </div>
+        <Box sx={{ width: "100%" }}>
+            {err ? (
+                <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setErr(null)}>
+                    {err}
+                </Alert>
+            ) : null}
 
             <div style={{ minHeight: 420, width: "100%" }}>
                 <DataGrid
@@ -132,6 +208,13 @@ export function LoansPage() {
                     autoHeight
                 />
             </div>
-        </div>
+
+            <Snackbar
+                open={Boolean(toast)}
+                autoHideDuration={2500}
+                onClose={() => setToast(null)}
+                message={toast ?? ""}
+            />
+        </Box>
     );
 }
