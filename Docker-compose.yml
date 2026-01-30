@@ -7,14 +7,15 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-library}
-      POSTGRES_USER: ${POSTGRES_USER:-library}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-library}
+      MYSQL_DATABASE: ${MYSQL_DB:-library}
+      MYSQL_USER: ${MYSQL_USER:-library}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-library}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       # UPEWNIJ SIĘ, ŻE TE ZMIENNE SĄ USTAWIONE W .env I ŻE UŻYWASZ ICH W KLIENCIE SQL
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/mysql
     restart: unless-stopped
 
   backend:
@@ -27,11 +28,11 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_HOST: db
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_DB: ${POSTGRES_DB:-library}
-      POSTGRES_USER: ${POSTGRES_USER:-library}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-library}
+      MYSQL_HOST: db
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DB: ${MYSQL_DB:-library}
+      MYSQL_USER: ${MYSQL_USER:-library}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-library}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-3600}
       BACKEND_PORT: 8080

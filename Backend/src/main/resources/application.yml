@@ -6,10 +6,10 @@ spring:
     name: library-management-system
   
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:library}
-    username: ${POSTGRES_USER:library}
-    password: ${POSTGRES_PASSWORD:library}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:library}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+    username: ${MYSQL_USER:library}
+    password: ${MYSQL_PASSWORD:library}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
     hibernate:
@@ -17,7 +17,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
     open-in-view: false
 

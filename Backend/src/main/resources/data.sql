@@ -16,16 +16,18 @@ VALUES
     'READER',
     'ACTIVE'
   )
-ON CONFLICT (email) DO UPDATE
-SET password_hash = EXCLUDED.password_hash,
-    first_name = EXCLUDED.first_name,
-    last_name = EXCLUDED.last_name,
-    role = EXCLUDED.role,
-    status = EXCLUDED.status;
+AS new
+ON DUPLICATE KEY UPDATE
+    password_hash = new.password_hash,
+    first_name = new.first_name,
+    last_name = new.last_name,
+    role = new.role,
+    status = new.status;
 
 INSERT INTO category (name)
 VALUES ('Science Fiction'), ('Classics')
-ON CONFLICT (name) DO NOTHING;
+AS new
+ON DUPLICATE KEY UPDATE name = new.name;
 
 INSERT INTO author (first_name, last_name)
 SELECT 'George', 'Orwell'

@@ -8,7 +8,7 @@
 
 
 
-SET search_path TO public;
+-- MySQL: brak search_path
 
 -- ============================================================
 -- 1. UŻYTKOWNICY (5)

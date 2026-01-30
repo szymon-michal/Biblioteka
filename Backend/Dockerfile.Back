@@ -25,11 +25,11 @@ COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
 
 # Environment variables (will be overridden by docker-compose or runtime)
-ENV POSTGRES_HOST=localhost
-ENV POSTGRES_PORT=5432
-ENV POSTGRES_DB=library
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=password
+ENV MYSQL_HOST=localhost
+ENV MYSQL_PORT=3306
+ENV MYSQL_DB=library
+ENV MYSQL_USER=library
+ENV MYSQL_PASSWORD=library
 ENV JWT_SECRET=myVerySecretKeyForJWTTokenGeneration123456789
 ENV JWT_EXPIRATION=86400
 
