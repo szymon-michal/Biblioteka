@@ -10,6 +10,13 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.library.dto.admin.AdminLoansPerDayDto;
+import com.library.dto.admin.AdminSummaryDto;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface LoanRepository extends JpaRepository<Loan, Long> {
     @Query("SELECT l FROM Loan l WHERE l.userId = :userId AND l.status IN :statuses")
@@ -34,4 +41,50 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 
     @Query("SELECT l FROM Loan l WHERE l.status = 'ACTIVE' AND l.dueDate < :now")
     List<Loan> findOverdueLoans(@Param("now") LocalDateTime now);
+    @Query("""
+   select count(l)
+   from Loan l
+   where l.loanDate between :from and :to
+""")
+    long countLoansBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+   select count(l)
+   from Loan l
+   where l.returnDate is null
+     and l.dueDate < :now
+""")
+    long countOverdueLoans(@Param("now") LocalDateTime now);
+
+    @Query("""
+   select new com.library.dto.admin.AdminSummaryDto$MostPopularBookDto(
+      b.id, b.title, count(l)
+   )
+   from Loan l
+     join l.bookCopy bc
+     join bc.book b
+   where l.loanDate between :from and :to
+   group by b.id, b.title
+   order by count(l) desc
+""")
+    List<AdminSummaryDto.MostPopularBookDto> findMostPopularBooks(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
+    @Query("""
+   select new com.library.dto.admin.AdminLoansPerDayDto(
+      function('date', l.loanDate),
+      count(l)
+   )
+   from Loan l
+   where l.loanDate between :from and :to
+   group by function('date', l.loanDate)
+   order by function('date', l.loanDate)
+""")
+    List<AdminLoansPerDayDto> findLoansPerDay(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
 }
