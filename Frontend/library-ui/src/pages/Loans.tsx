@@ -67,6 +67,12 @@ export function LoansPage() {
         if (status === 401) return "Zaloguj się ponownie (token wygasł lub brak tokenu).";
         return msg;
     }
+    function formatDate(value?: string | null) {
+        if (!value) return "—";
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return value; // fallback jakby coś było dziwne
+        return d.toLocaleDateString("pl-PL"); // d.m.Y
+    }
 
     async function extendLoan(loanId: number, additionalDays = 7) {
         setBusyId(loanId);
@@ -103,7 +109,8 @@ export function LoansPage() {
             {
                 field: "bookTitle",
                 headerName: "Tytuł",
-                flex: 1,
+                flex: 3,
+                minWidth: 250,
                 sortable: false,
                 renderCell: (params: GridRenderCellParams<LoanRow>) =>
                     params.row?.bookCopy?.book?.title ?? "—",
@@ -111,7 +118,7 @@ export function LoansPage() {
             {
                 field: "author",
                 headerName: "Autor",
-                width: 200,
+                width: 150,
                 sortable: false,
                 renderCell: (params: GridRenderCellParams<LoanRow>) =>
                     params.row?.bookCopy?.book?.author ?? "—",
@@ -126,8 +133,8 @@ export function LoansPage() {
             },
 
             { field: "status", headerName: "Status", width: 120 },
-            { field: "loanDate", headerName: "Wypożyczono", width: 180 },
-            { field: "dueDate", headerName: "Termin", width: 180 },
+            { field: "loanDate", headerName: "Wypożyczono", width: 120,  renderCell: (p) => formatDate(p.row?.loanDate), },
+            { field: "dueDate", headerName: "Termin", width: 120,  renderCell: (p) => formatDate(p.row?.loanDate), },
             {
                 field: "returnDatePretty",
                 headerName: "Zwrócono",
@@ -148,7 +155,7 @@ export function LoansPage() {
             {
                 field: "actions",
                 headerName: "Akcje",
-                width: 300,
+                width: 200,
                 sortable: false,
                 filterable: false,
                 renderCell: (params: GridRenderCellParams<LoanRow>) => {
