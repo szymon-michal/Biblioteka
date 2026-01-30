@@ -1,16 +1,17 @@
 package com.library.service;
 
 import com.library.dto.LoanDto;
+import com.library.exception.ResourceNotFoundException;
+import com.library.model.entity.AppUser;
 import com.library.model.entity.BookCopy;
 import com.library.model.entity.Loan;
-import com.library.model.entity.Reservation;
 import com.library.model.enums.BookCopyStatus;
 import com.library.model.enums.LoanStatus;
 import com.library.model.enums.ReservationStatus;
+import com.library.repository.AppUserRepository;
 import com.library.repository.BookCopyRepository;
 import com.library.repository.LoanRepository;
 import com.library.repository.ReservationRepository;
-import com.library.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -28,14 +28,15 @@ public class LoanService {
     private final LoanRepository loanRepository;
     private final BookCopyRepository bookCopyRepository;
     private final ReservationRepository reservationRepository;
+    private final AppUserRepository appUserRepository; // <-- DODANE
 
     public Page<LoanDto> getUserLoans(Long userId, List<LoanStatus> statuses, Pageable pageable) {
         return loanRepository.findByUserIdAndStatusIn(userId, statuses, pageable)
                 .map(this::toDto);
     }
 
-    public Page<LoanDto> getLoans(LoanStatus status, Long userId, Long bookId, 
-                                  LocalDateTime fromDate, LocalDateTime toDate, 
+    public Page<LoanDto> getLoans(LoanStatus status, Long userId, Long bookId,
+                                  LocalDateTime fromDate, LocalDateTime toDate,
                                   Pageable pageable) {
         return loanRepository.findLoansWithFilters(status, userId, bookId, fromDate, toDate, pageable)
                 .map(this::toDto);
@@ -44,8 +45,12 @@ public class LoanService {
     @Transactional
     public LoanDto createLoan(Long userId, Long bookId) {
         // Find available copy
-        BookCopy availableCopy = bookCopyRepository.findFirstByBookIdAndStatus(bookId, BookCopyStatus.AVAILABLE)
+        BookCopy availableCopy = bookCopyRepository
+                .findFirstByBookIdAndStatus(bookId, BookCopyStatus.AVAILABLE)
                 .orElseThrow(() -> new IllegalStateException("No available copies"));
+
+        // Pobierz użytkownika jako proxy (wystarczy do DTO; w transakcji dogra się z DB)
+        AppUser userRef = appUserRepository.getReferenceById(userId);
 
         // Create loan
         Loan loan = new Loan();
@@ -56,9 +61,13 @@ public class LoanService {
         loan.setStatus(LoanStatus.ACTIVE);
         loan.setExtensionsCount((short) 0);
 
+        // KLUCZ: podpinamy relacje, bo przy insertable=false Hibernate ich sam nie ustawi
+        loan.setUser(userRef);
+        loan.setBookCopy(availableCopy);
+
         Loan savedLoan = loanRepository.save(loan);
 
-        // Update book copy status
+        // Update book copy status (u Ciebie “ilość” = dostępne kopie; ta kopia przestaje być AVAILABLE)
         availableCopy.setStatus(BookCopyStatus.BORROWED);
         bookCopyRepository.save(availableCopy);
 
@@ -69,6 +78,10 @@ public class LoanService {
                     reservation.setFulfilledAt(LocalDateTime.now());
                     reservationRepository.save(reservation);
                 });
+
+        // Upewnij się, że DTO nie wywali NPE
+        savedLoan.setUser(userRef);
+        savedLoan.setBookCopy(availableCopy);
 
         return toDto(savedLoan);
     }
@@ -114,20 +127,33 @@ public class LoanService {
     }
 
     private LoanDto toDto(Loan loan) {
+        // Fallbacki gdyby kiedyś obiekt był zrobiony “ręcznie” bez relacji
+        AppUser user = loan.getUser();
+        if (user == null && loan.getUserId() != null) {
+            user = appUserRepository.getReferenceById(loan.getUserId());
+            loan.setUser(user);
+        }
+
+        BookCopy bookCopy = loan.getBookCopy();
+        if (bookCopy == null && loan.getBookCopyId() != null) {
+            bookCopy = bookCopyRepository.getReferenceById(loan.getBookCopyId());
+            loan.setBookCopy(bookCopy);
+        }
+
         LoanDto.UserSummaryDto userDto = new LoanDto.UserSummaryDto(
-                loan.getUser().getId(),
-                loan.getUser().getFirstName(),
-                loan.getUser().getLastName()
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName()
         );
 
         LoanDto.BookSummaryDto bookDto = new LoanDto.BookSummaryDto(
-                loan.getBookCopy().getBook().getId(),
-                loan.getBookCopy().getBook().getTitle()
+                bookCopy.getBook().getId(),
+                bookCopy.getBook().getTitle()
         );
 
         LoanDto.BookCopySummaryDto bookCopyDto = new LoanDto.BookCopySummaryDto(
-                loan.getBookCopy().getId(),
-                loan.getBookCopy().getInventoryCode(),
+                bookCopy.getId(),
+                bookCopy.getInventoryCode(),
                 bookDto
         );
 
