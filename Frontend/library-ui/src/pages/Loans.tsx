@@ -1,96 +1,137 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Box, Card, CardContent, Typography, TextField, Stack, Alert, Chip } from '@mui/material'
-import { DataGrid } from '@mui/x-data-grid'
-import type { GridColDef } from '@mui/x-data-grid'
-import { apiFetch } from '../lib/api'
+import * as React from "react";
+import { DataGrid } from "@mui/x-data-grid";
+import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
+import { api } from "../lib/api";
 
-type Row = Record<string, any>
+type LoanRow = {
+    id: number;
+    status: string;
+    loanDate: string;
+    dueDate: string;
+    returnDate: string | null;
+    extensionsCount?: number;
+
+    user?: { id: number; firstName: string; lastName: string } | null;
+    bookCopy?: {
+        id: number;
+        inventoryCode: string;
+        book?: { id: number; title: string } | null;
+    } | null;
+};
+
+type PageResponse<T> = { content: T[] };
 
 export function LoansPage() {
-  const [rows, setRows] = useState<Row[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [path, setPath] = useState<string>('/me/loans')
-  const [q, setQ] = useState('')
+    const [rows, setRows] = React.useState<LoanRow[]>([]);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
 
-  useEffect(() => {
-    let alive = true
-    ;(async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const data = await apiFetch<any>(path)
-        const arr = Array.isArray(data) ? data : data?.content || data?.items || data?.data || []
-        if (alive) setRows(arr)
-      } catch (e: any) {
-        if (alive) setError(e?.message || 'Could not load loans')
-      } finally {
-        if (alive) setLoading(false)
-      }
-    })()
-    return () => {
-      alive = false
-    }
-  }, [path])
+    React.useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            setError(null);
 
-  const cols = useMemo<GridColDef<Row>[]>(() => {
-    const first = rows[0]
-    if (!first) return []
-    const keys = Object.keys(first)
-    const preferred = ['id', 'status', 'loanDate', 'dueDate', 'returnDate', 'extensionsCount']
-    keys.sort((a, b) => {
-      const pa = preferred.indexOf(a)
-      const pb = preferred.indexOf(b)
-      return (pa === -1 ? 999 : pa) - (pb === -1 ? 999 : pb)
-    })
-    return keys.slice(0, 10).map((k) => ({ field: k, headerName: k, flex: 1, minWidth: 150, valueGetter: (p) => (p.row as any)[k] }))
-  }, [rows])
+            try {
+                // baseURL w api.ts = http://localhost:8080/api
+                // więc tutaj dajemy /me/loans (bez /api)
+                const res = await api.get<PageResponse<LoanRow>>("/me/loans");
+                setRows(res.data?.content ?? []);
+            } catch (e: any) {
+                console.error(e);
+                const status = e?.response?.status;
+                const msg =
+                    e?.response?.data?.message ||
+                    e?.response?.data?.error ||
+                    e?.message ||
+                    "Unknown error";
+                setError(status ? `HTTP ${status}: ${msg}` : msg);
+                setRows([]);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase()
-    if (!needle) return rows
-    return rows.filter((r) => JSON.stringify(r).toLowerCase().includes(needle))
-  }, [rows, q])
+        void load();
+    }, []);
 
-  return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} sx={{ mb: 2, flexShrink: 0 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 900 }}>
-            Wypożyczenia
-          </Typography>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5, flexWrap: 'wrap' }}>
-            <Typography variant="body2" color="text.secondary">
-              Endpoint:
-            </Typography>
-            <Chip size="small" label={path} />
-          </Stack>
-        </Box>
-        <TextField label="Szukaj" value={q} onChange={(e) => setQ(e.target.value)} size="small" sx={{ width: { xs: '100%', sm: 280 } }} />
-      </Stack>
+    const columns = React.useMemo<GridColDef<LoanRow>[]>(
+        () => [
+            { field: "id", headerName: "ID", width: 90 },
 
-      <Card sx={{ borderRadius: 4, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {loading ? (
-            <Typography color="text.secondary">Ładowanie…</Typography>
-          ) : error ? (
-            <Alert severity="error">{error}</Alert>
-          ) : rows.length === 0 ? (
-            <Typography color="text.secondary">Brak danych.</Typography>
-          ) : (
-            <Box sx={{ flex: 1, width: '100%', overflow: 'hidden' }}>
-              <DataGrid
-                rows={filtered.map((r, i) => ({ id: r.id ?? i, ...r }))}
-                columns={cols}
-                disableRowSelectionOnClick
-                initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-                pageSizeOptions={[10, 20, 50]}
-                sx={{ height: '100%', border: 0 }}
-              />
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    </Box>
-  )
+            {
+                field: "bookTitle",
+                headerName: "Tytuł",
+                flex: 1,
+                sortable: false,
+                renderCell: (params: GridRenderCellParams<LoanRow>) =>
+                    params.row?.bookCopy?.book?.title ?? "—",
+            },
+
+            {
+                field: "copyCode",
+                headerName: "Kod egz.",
+                width: 140,
+                sortable: false,
+                renderCell: (params: GridRenderCellParams<LoanRow>) =>
+                    params.row?.bookCopy?.inventoryCode ?? "—",
+            },
+
+            {
+                field: "userName",
+                headerName: "Użytkownik",
+                width: 200,
+                sortable: false,
+                renderCell: (params: GridRenderCellParams<LoanRow>) => {
+                    const u = params.row?.user;
+                    if (!u) return "—";
+                    const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+                    return name || `ID: ${u.id}`;
+                },
+            },
+
+            { field: "status", headerName: "Status", width: 120 },
+            { field: "loanDate", headerName: "Wypożyczono", width: 180 },
+            { field: "dueDate", headerName: "Termin", width: 180 },
+
+            {
+                field: "returnDatePretty",
+                headerName: "Zwrócono",
+                width: 180,
+                sortable: false,
+                renderCell: (params: GridRenderCellParams<LoanRow>) =>
+                    params.row?.returnDate ?? "—",
+            },
+
+            {
+                field: "extensionsCount",
+                headerName: "Przedłużenia",
+                width: 140,
+                renderCell: (params: GridRenderCellParams<LoanRow>) =>
+                    String(params.row?.extensionsCount ?? 0),
+            },
+        ],
+        []
+    );
+
+    return (
+        <div style={{ width: "100%" }}>
+            <div style={{ marginBottom: 12, fontFamily: "monospace", fontSize: 12 }}>
+                <div>loading: {String(loading)}</div>
+                <div>error: {error ?? "null"}</div>
+                <div>rows.length: {rows.length}</div>
+                <div>firstRow.id: {rows[0]?.id ?? "—"}</div>
+            </div>
+
+            <div style={{ minHeight: 420, width: "100%" }}>
+                <DataGrid
+                    rows={rows}
+                    columns={columns}
+                    loading={loading}
+                    getRowId={(r) => r.id}
+                    disableRowSelectionOnClick
+                    autoHeight
+                />
+            </div>
+        </div>
+    );
 }
