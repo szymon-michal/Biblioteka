@@ -1,5 +1,5 @@
-import React from 'react'
-import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography, Card, CardContent, Chip } from '@mui/material'
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded'
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded'
 import AssignmentReturnedRoundedIcon from '@mui/icons-material/AssignmentReturnedRounded'
@@ -8,6 +8,7 @@ import TravelExploreRoundedIcon from '@mui/icons-material/TravelExploreRounded'
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded'
 import type { RouteKey } from '../routes'
 import { auth } from '../lib/auth'
+import { apiFetch } from '../lib/api'
 
 const nav = {
   dashboard: { label: 'Dashboard', icon: <DashboardRoundedIcon fontSize="small" /> },
@@ -21,11 +22,35 @@ const nav = {
 export function Sidebar(props: { current: RouteKey; onNavigate: (r: RouteKey) => void; onAnyClick?: () => void }) {
   const role = auth.getRole()
   const isAdmin = auth.isLoggedIn() && role === 'ADMIN'
+  const [activeLoans, setActiveLoans] = useState(0)
 
-  const items: RouteKey[] = ['dashboard', 'catalog', 'loans', ...(isAdmin ? (['members', 'explorer'] as const) : ([] as const)), 'settings']
+  const items: RouteKey[] = [
+    'dashboard',
+    'catalog',
+    'loans',
+    ...(isAdmin ? (['members', 'explorer', 'settings'] as const) : ([] as const)),
+  ]
+
+  useEffect(() => {
+    if (!auth.isLoggedIn()) return
+
+    const fetchLoans = async () => {
+      try {
+        const data = await apiFetch<any>('/me/loans')
+        const loans = Array.isArray(data) ? data : data?.content || []
+        setActiveLoans(loans.length)
+      } catch {
+        setActiveLoans(0)
+      }
+    }
+
+    fetchLoans()
+    const interval = setInterval(fetchLoans, 30000) // Refresh every 30s
+    return () => clearInterval(interval)
+  }, [])
 
   return (
-    <Box sx={{ width: 280, p: 1.5 }}>
+    <Box sx={{ width: 280, p: 1.5, display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, pb: 1.2 }}>
         <Box
           aria-hidden
@@ -47,14 +72,14 @@ export function Sidebar(props: { current: RouteKey; onNavigate: (r: RouteKey) =>
             Library
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            rola: {role || '—'}
+            Zalogowany
           </Typography>
         </Box>
       </Box>
 
       <Divider />
 
-      <List sx={{ pt: 1 }}>
+      <List sx={{ pt: 1, flex: 1 }}>
         {items.map((key) => (
           <ListItemButton
             key={key}
@@ -71,10 +96,24 @@ export function Sidebar(props: { current: RouteKey; onNavigate: (r: RouteKey) =>
         ))}
       </List>
 
-      <Divider sx={{ mt: 1 }} />
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', px: 1, pt: 1 }}>
-        Sesja: {auth.isLoggedIn() ? 'JWT OK' : 'brak (zaloguj się)'}
-      </Typography>
+      <Card variant="outlined" sx={{ mt: 'auto', borderRadius: 2 }}>
+        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Aktywne wypożyczenia
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              label={activeLoans}
+              size="small"
+              color={activeLoans > 0 ? 'primary' : 'default'}
+              sx={{ fontWeight: 700 }}
+            />
+            <Typography variant="caption" color="text.secondary">
+              {activeLoans === 1 ? 'książka' : activeLoans > 1 && activeLoans < 5 ? 'książki' : 'książek'}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   )
 }

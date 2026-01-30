@@ -29,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String token = getTokenFromRequest(request);
+        String path = request.getRequestURI();
 
         if (token != null && tokenProvider.validateToken(token)) {
             String userId = tokenProvider.getUserIdFromToken(token);
@@ -39,6 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     ? "ROLE_" + role
                     : (role != null ? role : "ROLE_USER");
 
+            System.out.println(">>> JWT FILTER [" + path + "]: userId=" + userId + ", role=" + role + ", authority=" + authority);
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             Long.parseLong(userId),
@@ -47,13 +50,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+        } else if (path.startsWith("/api/loans") || path.startsWith("/api/me")) {
+            System.out.println(">>> JWT FILTER [" + path + "]: No valid token found!");
         }
 
         filterChain.doFilter(request, response);
     }
 
     private String getTokenFromRequest(HttpServletRequest request) {
+        // Try both "Authorization" and "authorization" (case-insensitive)
         String bearerToken = request.getHeader("Authorization");
+        if (bearerToken == null) {
+            bearerToken = request.getHeader("authorization");
+        }
+
+        System.out.println(">>> JWT FILTER: Authorization header = " + bearerToken);
+
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }

@@ -20,12 +20,14 @@ public class JwtTokenProvider {
   @Value("${app.jwt.expiration:86400}")
   private int jwtExpirationInMs;
 
-  private Key getSigningKey() {
+  private javax.crypto.SecretKey getSigningKey() {
     return Keys.hmacShaKeyFor(jwtSecret.getBytes());
   }
 
   private JwtParser getParser() {
-    return (JwtParser) Jwts.parser().setSigningKey(getSigningKey());
+    return Jwts.parser()
+            .verifyWith((javax.crypto.SecretKey) getSigningKey())
+            .build();
   }
 
   public String generateToken(AppUser user) {
@@ -60,6 +62,7 @@ public class JwtTokenProvider {
       getParser().parseClaimsJws(token);
       return true;
     } catch (Exception e) {
+      System.out.println(">>> JWT VALIDATION FAILED: " + e.getClass().getSimpleName() + " - " + e.getMessage());
       return false;
     }
   }

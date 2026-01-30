@@ -8,7 +8,7 @@ import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosError } f
 const API_BASE_URL =
   (import.meta as any).env?.VITE_API_URL?.toString() || "http://localhost:8080/api";
 
-const ACCESS_TOKEN_KEY = "access_token";
+const ACCESS_TOKEN_KEY = "library.jwt";
 
 export const tokenStore = {
   get(): string | null {

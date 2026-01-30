@@ -41,6 +41,8 @@ export function LoginPage(props: { onSuccess?: () => void }) {
         body: { email: emailTrimmed, password: passwordTrimmed },
       })
 
+      console.log('>>> LOGIN RESPONSE:', res)
+
       // Common token field names (adjust if your backend returns something else)
       const token =
           res?.token ||
@@ -49,6 +51,8 @@ export function LoginPage(props: { onSuccess?: () => void }) {
           res?.data?.token ||
           res?.data?.accessToken
 
+      console.log('>>> TOKEN EXTRACTED:', token)
+
       if (!token) {
         throw new Error(
             'Login succeeded but no token was found in the response. Check the login response JSON and map the token field.',
@@ -56,6 +60,7 @@ export function LoginPage(props: { onSuccess?: () => void }) {
       }
 
       auth.setSession(token, res?.user)
+      console.log('>>> TOKEN SAVED, checking localStorage:', localStorage.getItem('access_token'))
       props.onSuccess?.()
     } catch (e: any) {
       // your backend returns { message, details } sometimes
