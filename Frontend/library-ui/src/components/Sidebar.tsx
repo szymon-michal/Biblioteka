@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography, Card, CardContent, Chip } from '@mui/material'
+import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography, Card, CardContent, Chip, Stack } from '@mui/material'
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded'
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded'
 import AssignmentReturnedRoundedIcon from '@mui/icons-material/AssignmentReturnedRounded'
 import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded'
-import TravelExploreRoundedIcon from '@mui/icons-material/TravelExploreRounded'
-import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded'
+import AutoStoriesRoundedIcon from '@mui/icons-material/AutoStoriesRounded'
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
+import GavelRoundedIcon from '@mui/icons-material/GavelRounded'
+import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded'
 import type { RouteKey } from '../routes'
 import { auth } from '../lib/auth'
 import { apiFetch } from '../lib/api'
@@ -13,10 +15,15 @@ import { apiFetch } from '../lib/api'
 const nav = {
   dashboard: { label: 'Dashboard', icon: <DashboardRoundedIcon fontSize="small" /> },
   catalog: { label: 'Katalog', icon: <MenuBookRoundedIcon fontSize="small" /> },
-  loans: { label: 'Wypożyczenia', icon: <AssignmentReturnedRoundedIcon fontSize="small" /> },
+  loans: { label: 'Moje wypożyczenia', icon: <AssignmentReturnedRoundedIcon fontSize="small" /> },
+
+  // admin:
   members: { label: 'Użytkownicy', icon: <PeopleAltRoundedIcon fontSize="small" /> },
-  explorer: { label: 'API Explorer', icon: <TravelExploreRoundedIcon fontSize="small" /> },
-  settings: { label: 'Ustawienia', icon: <SettingsRoundedIcon fontSize="small" /> },
+  adminBooks: { label: 'Książki', icon: <AutoStoriesRoundedIcon fontSize="small" /> },
+  adminAuthors: { label: 'Autorzy', icon: <PersonRoundedIcon fontSize="small" /> },
+  adminLoans: { label: 'Wypożyczenia (admin)', icon: <AssignmentReturnedRoundedIcon fontSize="small" /> },
+  adminPenalties: { label: 'Kary', icon: <GavelRoundedIcon fontSize="small" /> },
+  adminStats: { label: 'Statystyki', icon: <QueryStatsRoundedIcon fontSize="small" /> },
 } as const
 
 export function Sidebar(props: { current: RouteKey; onNavigate: (r: RouteKey) => void; onAnyClick?: () => void }) {
@@ -28,7 +35,7 @@ export function Sidebar(props: { current: RouteKey; onNavigate: (r: RouteKey) =>
     'dashboard',
     'catalog',
     'loans',
-    ...(isAdmin ? (['members', 'explorer', 'settings'] as const) : ([] as const)),
+    ...(isAdmin ? (['members', 'adminBooks', 'adminAuthors', 'adminLoans', 'adminPenalties', 'adminStats'] as const) : ([] as const)),
   ]
 
   useEffect(() => {
@@ -45,75 +52,58 @@ export function Sidebar(props: { current: RouteKey; onNavigate: (r: RouteKey) =>
     }
 
     fetchLoans()
-    const interval = setInterval(fetchLoans, 30000) // Refresh every 30s
+    const interval = setInterval(fetchLoans, 30000)
     return () => clearInterval(interval)
   }, [])
 
   return (
     <Box sx={{ width: 280, p: 1.5, display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, pb: 1.2 }}>
-        <Box
-          aria-hidden
-          sx={{
-            width: 38,
-            height: 38,
-            borderRadius: 2,
-            bgcolor: 'primary.main',
-            display: 'grid',
-            placeItems: 'center',
-            color: 'white',
-            fontWeight: 800,
-          }}
-        >
-          📚
-        </Box>
-        <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-            Library
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Zalogowany
-          </Typography>
-        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: 0.2 }}>
+          Library
+        </Typography>
       </Box>
 
-      <Divider />
+      <Card variant="outlined" sx={{ borderRadius: 4, mb: 1.5 }}>
+        <CardContent sx={{ py: 1.3, '&:last-child': { pb: 1.3 } }}>
+          <Typography variant="body2" sx={{ opacity: 0.8 }}>
+            Zalogowano jako
+          </Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+            {auth.getUser()?.email || 'Użytkownik'}
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', rowGap: 1 }}>
+            <Chip size="small" label={role || 'USER'} />
+            <Chip size="small" label={`Aktywne wypożyczenia: ${activeLoans}`} />
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <List sx={{ pt: 1, flex: 1 }}>
-        {items.map((key) => (
+      <Divider sx={{ mb: 1 }} />
+
+      <List dense sx={{ flex: 1, overflowY: 'auto' }}>
+        {items.map((k) => (
           <ListItemButton
-            key={key}
-            selected={props.current === key}
+            key={k}
+            selected={props.current === k}
             onClick={() => {
-              props.onNavigate(key)
+              props.onNavigate(k)
               props.onAnyClick?.()
             }}
-            sx={{ borderRadius: 2, mb: 0.5 }}
+            sx={{ borderRadius: 3, my: 0.25 }}
           >
-            <ListItemIcon sx={{ minWidth: 36 }}>{(nav as any)[key].icon}</ListItemIcon>
-            <ListItemText primary={(nav as any)[key].label} primaryTypographyProps={{ fontSize: 14, fontWeight: 600 }} />
+            <ListItemIcon sx={{ minWidth: 36 }}>{(nav as any)[k]?.icon}</ListItemIcon>
+            <ListItemText primary={(nav as any)[k]?.label || k} />
           </ListItemButton>
         ))}
       </List>
 
-      <Card variant="outlined" sx={{ mt: 'auto', borderRadius: 2 }}>
-        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Aktywne wypożyczenia
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Chip
-              label={activeLoans}
-              size="small"
-              color={activeLoans > 0 ? 'primary' : 'default'}
-              sx={{ fontWeight: 700 }}
-            />
-            <Typography variant="caption" color="text.secondary">
-              {activeLoans === 1 ? 'książka' : activeLoans > 1 && activeLoans < 5 ? 'książki' : 'książek'}
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
+      <Divider sx={{ mt: 1 }} />
+      <Box sx={{ px: 1, pt: 1 }}>
+        <Typography variant="caption" sx={{ opacity: 0.6 }}>
+          © {new Date().getFullYear()} Library
+        </Typography>
+      </Box>
     </Box>
   )
 }

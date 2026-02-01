@@ -41,11 +41,11 @@ public class AdminStatsService {
     @Transactional(readOnly = true)
     public List<AdminLoansPerDayDto> getLoansPerDay(LocalDate from, LocalDate to) {
         LocalDateTime fromDt = from.atStartOfDay();
-        LocalDateTime toDt = to.plusDays(1).atStartOfDay();
+        LocalDateTime toDt = to.plusDays(1).atStartOfDay(); // <--- UWAGA: to jest EXCLUSIVE
 
-        return loanRepository.findLoansPerDay(fromDt, toDt)
-                .stream()
-                .map(x -> new AdminLoansPerDayDto(x.getDay().toString(), x.getLoansCount()))
+        return loanRepository.findLoansPerDay(fromDt, toDt).stream()
+                .map(r -> new AdminLoansPerDayDto(r.getDay().toLocalDate(), r.getLoansCount()))
                 .toList();
     }
+
 }

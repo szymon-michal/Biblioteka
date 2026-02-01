@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Box, Card, CardContent, Typography, TextField, Stack, Alert, Chip } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
-import type { GridColDef } from '@mui/x-data-grid'
+import type { GridColDef } from '@mui/x-data-grid/models'
 import { apiFetch } from '../lib/api'
 import { auth } from '../lib/auth'
 
@@ -22,7 +22,7 @@ export function MembersPage() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [path, setPath] = useState<string>('/api/admin/users')
+  const [path, setPath] = useState<string>('/admin/users')
   const [q, setQ] = useState('')
 
   useEffect(() => {
@@ -45,18 +45,21 @@ export function MembersPage() {
     }
   }, [])
 
-  const cols = useMemo<GridColDef<Row>[]>(() => {
-    const first = rows[0]
-    if (!first) return []
-    const keys = Object.keys(first)
-    const preferred = ['id', 'email', 'firstName', 'lastName', 'role', 'status', 'createdAt']
-    keys.sort((a, b) => {
-      const pa = preferred.indexOf(a)
-      const pb = preferred.indexOf(b)
-      return (pa === -1 ? 999 : pa) - (pb === -1 ? 999 : pb)
-    })
-    return keys.slice(0, 10).map((k) => ({ field: k, headerName: k, flex: 1, minWidth: 150, valueGetter: (p) => (p.row as any)[k] }))
-  }, [rows])
+  const cols: GridColDef<Row>[] = useMemo(
+      () => [
+        { field: 'id', headerName: 'ID', width: 90 },
+        { field: 'email', headerName: 'Email', flex: 1, minWidth: 220 },
+        { field: 'firstName', headerName: 'Imię', flex: 1, minWidth: 140 },
+        { field: 'lastName', headerName: 'Nazwisko', flex: 1, minWidth: 160 },
+        { field: 'role', headerName: 'Rola', width: 120 },
+        { field: 'status', headerName: 'Status', width: 120 },
+        // MUI DataGrid v7+: valueGetter receives (value, row)
+        { field: 'blockedUntil', headerName: 'Blokada do', width: 180, valueGetter: (_v, row) => (row as any)?.blockedUntil ?? '' },
+        { field: 'createdAt', headerName: 'Utworzono', width: 180, valueGetter: (_v, row) => (row as any)?.createdAt ?? '' },
+      ],
+      []
+  )
+
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()

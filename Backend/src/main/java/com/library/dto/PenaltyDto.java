@@ -20,6 +20,9 @@ public class PenaltyDto {
     private PenaltyStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime resolvedAt;
+    private Long userId;
+    private LocalDateTime issuedAt;
+    private boolean paid;
 
     @Data
     @NoArgsConstructor

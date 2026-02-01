@@ -46,4 +46,20 @@ public class BookCopy {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public boolean isAvailable() {
+        return status == BookCopyStatus.AVAILABLE;
+    }
+
+
+    public void setAvailable(boolean available) {
+        if (available) {
+            this.status = BookCopyStatus.AVAILABLE;
+        } else {
+            // tylko jeśli aktualnie była dostępna
+            if (this.status == BookCopyStatus.AVAILABLE) {
+                this.status = BookCopyStatus.BORROWED;
+            }
+        }
+    }
 }

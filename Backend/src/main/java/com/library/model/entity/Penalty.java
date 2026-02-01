@@ -52,4 +52,11 @@ public class Penalty {
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
+    @Transient
+    @Column(nullable = false)
+    private LocalDateTime issuedAt;
+    @Transient
+    @Column(nullable = false)
+    private boolean paid;
+
 }

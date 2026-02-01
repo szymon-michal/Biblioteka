@@ -3,11 +3,13 @@ package com.library.service;
 import com.library.dto.UserDto;
 import com.library.dto.request.ChangePasswordRequest;
 import com.library.dto.request.UpdateProfileRequest;
+import com.library.dto.request.UpdateUserRequest;
 import com.library.model.entity.AppUser;
 import com.library.model.enums.UserRole;
 import com.library.model.enums.UserStatus;
 import com.library.repository.AppUserRepository;
 import com.library.exception.ResourceNotFoundException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,38 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Transactional
+    public UserDto updateUser(Long id, UpdateUserRequest req) {
+        AppUser u = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+
+        if (req.getEmail() != null) u.setEmail(req.getEmail().trim());
+        if (req.getFirstName() != null) u.setFirstName(req.getFirstName().trim());
+        if (req.getLastName() != null) u.setLastName(req.getLastName().trim());
+        if (req.getRole() != null) u.setRole(req.getRole());
+        if (req.getStatus() != null) u.setStatus(req.getStatus());
+
+        // opcjonalnie:
+        if (req.getBlockedReason() != null || req.getBlockedUntil() != null) {
+            u.setBlockedReason(req.getBlockedReason());
+            u.setBlockedUntil(req.getBlockedUntil());
+        }
+
+        AppUser saved = userRepository.save(u);
+
+        // return userMapper.toDto(saved);
+        return toDto(saved); // <- podmień na swój mapper
+    }
+
+
+    @Transactional
+    public void deleteUser(Long id) {
+        AppUser u = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+
+        userRepository.delete(u);
+    }
 
     public Page<UserDto> getUsers(UserRole role, UserStatus status, String search, Pageable pageable) {
         return userRepository.findUsersWithFilters(role, status, search, pageable)
@@ -98,4 +132,5 @@ public class UserService {
                 user.getCreatedAt()
         );
     }
+
 }

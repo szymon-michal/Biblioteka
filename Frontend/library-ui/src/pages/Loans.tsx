@@ -1,59 +1,53 @@
-import * as React from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Alert, Box, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import type { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import { Box, Button, Stack, Alert, Snackbar, CircularProgress } from "@mui/material";
+import type { GridColDef } from "@mui/x-data-grid/models";
 import { api } from "../lib/api";
-import { formatAuthors, type AuthorDto } from "../lib/formatters";
 
 type LoanRow = {
-    id: number;
-    status: string;
-    loanDate: string;
-    dueDate: string;
-    returnDate: string | null;
-    extensionsCount?: number;
-
-    user?: { id: number; firstName: string; lastName: string } | null;
-    bookCopy?: {
-        id: number;
-        inventoryCode: string;
-        book?: { id: number; title: string; authors?: AuthorDto[] | null; } | null;
-    } | null;
+    id: number | null;
+    user?: any | null;
+    bookCopy?: { id?: number | null; inventoryCode?: string | null; book?: { id?: number | null; title?: string | null } | null } | null;
+    loanDate?: string | null;
+    dueDate?: string | null;
+    returnDate?: string | null;
+    status?: string | null;
+    extensionsCount?: number | null;
 };
 
-type PageResponse<T> = { content: T[] };
+type PageResponse<T> = {
+    content: T[];
+    totalElements?: number;
+};
+
+function formatDateTime(value?: string | null) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    // 01.03.2026, 14:02
+    return d.toLocaleString("pl-PL", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
 
 export function LoansPage() {
     const [rows, setRows] = React.useState<LoanRow[]>([]);
     const [loading, setLoading] = React.useState(false);
     const [busyId, setBusyId] = React.useState<number | null>(null); // spinner tylko dla klikniętego wiersza
     const [err, setErr] = React.useState<string | null>(null);
-    const [toast, setToast] = React.useState<string | null>(null);
+    const [toast, setToast] = React.useState<string | null>(null); // spinner tylko dla klikniętego wiersza
 
-    const load = React.useCallback(async () => {
-        setLoading(true);
-        setErr(null);
+    async function returnLoan(id: number) {
+        if (!confirm(`Na pewno oznaczyć wypożyczenie #${id} jako zwrócone?`)) return;
         try {
-            const res = await api.get<PageResponse<LoanRow>>("/me/loans");
-            setRows(res.data?.content ?? []);
+            setLoading(true);
+            setErr(null);
+            await api.post(`/loans/${id}/return`);
+            await load();
         } catch (e: any) {
-            const status = e?.response?.status;
-            const msg =
-                e?.response?.data?.message ||
-                e?.response?.data?.error ||
-                e?.message ||
-                "Unknown error";
-            setErr(status ? `HTTP ${status}: ${msg}` : msg);
-            setRows([]);
+            setErr(e?.response?.data?.message || e?.message || "Nie udało się oddać książki");
         } finally {
             setLoading(false);
         }
-    }, []);
-
-    React.useEffect(() => {
-        void load();
-    }, [load]);
-
+    }
     function apiErrorMessage(e: any, fallback: string) {
         const status = e?.response?.status;
         const msg =
@@ -68,13 +62,6 @@ export function LoansPage() {
         if (status === 401) return "Zaloguj się ponownie (token wygasł lub brak tokenu).";
         return msg;
     }
-    function formatDate(value?: string | null) {
-        if (!value) return "—";
-        const d = new Date(value);
-        if (isNaN(d.getTime())) return value; // fallback jakby coś było dziwne
-        return d.toLocaleDateString("pl-PL"); // d.m.Y
-    }
-
     async function extendLoan(loanId: number, additionalDays = 7) {
         setBusyId(loanId);
         setErr(null);
@@ -89,140 +76,142 @@ export function LoansPage() {
         }
     }
 
-    async function returnLoan(loanId: number) {
-        setBusyId(loanId);
-        setErr(null);
-        try {
-            await api.post(`/loans/${loanId}/return`);
-            setToast(`Zwrócono książkę (wypożyczenie #${loanId})`);
-            await load();
-        } catch (e: any) {
-            setErr(apiErrorMessage(e, "Nie udało się zwrócić"));
-        } finally {
-            setBusyId(null);
-        }
-    }
 
-    const columns = React.useMemo<GridColDef<LoanRow>[]>(
+    const load = async () => {
+        setLoading(true);
+        setErr(null);
+
+        try {
+            // jeśli u Ciebie jest inny endpoint, zmień tylko to jedno:
+            const res = await api.get<PageResponse<LoanRow>>("/me/loans?page=0&size=50");
+
+            const raw = res.data?.content ?? [];
+
+            // ✅ HARDENING: backend czasem zwraca rekordy-nulle (id:null itd.)
+            const clean = raw.filter((r) => r && r.id != null);
+
+            // jeśli backend twierdzi że ma elementy, ale wszystkie są null → pokaż błąd
+            if ((res.data?.totalElements ?? raw.length) > 0 && clean.length === 0) {
+                setErr("Backend zwrócił rekordy z pustymi polami (id=null). Napraw endpoint /api/me/loans – UI nie może tego wyświetlić.");
+            }
+
+            setRows(clean);
+        } catch (e: any) {
+            setErr(e?.response?.data?.message || e?.message || "Nie udało się pobrać wypożyczeń");
+            setRows([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        void load();
+    }, []);
+
+    const cols = useMemo<GridColDef<LoanRow>[]>(
         () => [
             { field: "id", headerName: "ID", width: 90 },
 
             {
-                field: "bookTitle",
+                field: "title",
                 headerName: "Tytuł",
-                flex: 3,
-                minWidth: 250,
-                sortable: false,
-                renderCell: (params: GridRenderCellParams<LoanRow>) =>
-                    params.row?.bookCopy?.book?.title ?? "—",
+                flex: 1.6,
+                minWidth: 260,
+                valueGetter: (_v, row) => row.bookCopy?.book?.title ?? "—",
             },
             {
-                field: "authors",
-                headerName: "Autorzy",
-                width: 150,
-                sortable: false,
-                renderCell: (params: GridRenderCellParams<LoanRow>) =>
-                    formatAuthors(params.row?.bookCopy?.book?.authors),
-            },
-            {
-                field: "copyCode",
-                headerName: "Kod egz.",
+                field: "inventoryCode",
+                headerName: "Egzemplarz",
                 width: 140,
-                sortable: false,
-                renderCell: (params: GridRenderCellParams<LoanRow>) =>
-                    params.row?.bookCopy?.inventoryCode ?? "—",
+                valueGetter: (_v, row) => row.bookCopy?.inventoryCode ?? "—",
             },
-
-            { field: "status", headerName: "Status", width: 120 },
-            { field: "loanDate", headerName: "Wypożyczono", width: 120,  renderCell: (p) => formatDate(p.row?.loanDate), },
-            { field: "dueDate", headerName: "Termin", width: 120,  renderCell: (p) => formatDate(p.row?.dueDate), },
+            { field: "status", headerName: "Status", width: 120, valueGetter: (_v, row) => row.status ?? "—" },
             {
-                field: "returnDatePretty",
-                headerName: "Zwrócono",
+                field: "loanDate",
+                headerName: "Data wypożyczenia",
                 width: 180,
-                sortable: false,
-                renderCell: (params: GridRenderCellParams<LoanRow>) =>
-                    params.row?.returnDate ?? "—",
+                valueGetter: (_v, row) => formatDateTime(row.loanDate),
+            },
+            {
+                field: "dueDate",
+                headerName: "Termin zwrotu",
+                width: 180,
+                valueGetter: (_v, row) => formatDateTime(row.dueDate),
+            },
+            {
+                field: "returnDate",
+                headerName: "Zwrot",
+                width: 180,
+                valueGetter: (_v, row) => formatDateTime(row.returnDate),
             },
             {
                 field: "extensionsCount",
                 headerName: "Przedłużenia",
                 width: 140,
-                sortable: false,
-                renderCell: (params: GridRenderCellParams<LoanRow>) =>
-                    String(params.row?.extensionsCount ?? 0),
+                valueGetter: (_v, row) => (row.extensionsCount ?? 0).toString(),
             },
 
+            ,
             {
                 field: "actions",
                 headerName: "Akcje",
-                width: 200,
+                width: 230,
                 sortable: false,
                 filterable: false,
-                renderCell: (params: GridRenderCellParams<LoanRow>) => {
-                    const r = params.row;
-                    const isActive = r.status === "ACTIVE";
-                    const canExtend = isActive && (r.extensionsCount ?? 0) < 2;
-                    const canReturn = isActive;
-                    const isBusy = busyId === r.id;
-
-                    return (
-                        <Stack direction="row" spacing={1} alignItems="center">
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                disabled={!canExtend || isBusy}
-                                onClick={() => extendLoan(r.id, 7)}
-                            >
-                                Przedłuż +7
-                            </Button>
-                            <Button
-                                size="small"
-                                color="success"
-                                variant="contained"
-                                disabled={!canReturn || isBusy}
-                                onClick={() => {
-                                    if (confirm(`Na pewno zwrócić wypożyczenie #${r.id}?`)) {
-                                        void returnLoan(r.id);
-                                    }
-                                }}
-                            >
-                                Zwróć
-                            </Button>
-                            {isBusy ? <CircularProgress size={18} /> : null}
-                        </Stack>
-                    );
-                },
-            },
+                renderCell: (p) => (
+                    <Stack direction="row" spacing={1}>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            disabled={loading || p?.row?.status !== "ACTIVE"}
+                            onClick={() => extendLoan(p.row.id)}
+                        >
+                            Przedłuż
+                        </Button>
+                        <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            disabled={loading || p?.row?.status !== "ACTIVE"}
+                            onClick={() => returnLoan(p.row.id)}
+                        >
+                            Oddaj
+                        </Button>
+                    </Stack>
+                ),
+            }
         ],
-        [busyId]
+        [loading]
     );
 
     return (
         <Box sx={{ width: "100%" }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                    Wypożyczenia
+                </Typography>
+                <Chip size="small" variant="outlined" label={`${rows.length} rekordów`} />
+            </Stack>
+
             {err ? (
                 <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setErr(null)}>
                     {err}
                 </Alert>
             ) : null}
 
-            <div style={{ minHeight: 420, width: "100%" }}>
-                <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    loading={loading}
-                    getRowId={(r) => r.id}
-                    disableRowSelectionOnClick
-                    autoHeight
-                />
-            </div>
-
-            <Snackbar
-                open={Boolean(toast)}
-                autoHideDuration={2500}
-                onClose={() => setToast(null)}
-                message={toast ?? ""}
-            />
+            <Card sx={{ borderRadius: 4 }}>
+                <CardContent>
+                    <DataGrid
+                        autoHeight
+                        rows={rows}
+                        columns={cols}
+                        loading={loading}
+                        disableRowSelectionOnClick
+                        // ✅ SAFETY: nawet jak gdzieś trafi się null-id, grid nie wybuchnie
+                        getRowId={(r) => (r.id != null ? r.id : `tmp-${r.bookCopy?.id ?? "x"}-${r.dueDate ?? "x"}-${Math.random()}`)}
+                    />
+                </CardContent>
+            </Card>
         </Box>
     );
 }

@@ -1,9 +1,16 @@
 package com.library.service;
 
 import com.library.dto.PenaltyDto;
+import com.library.dto.request.AdminCreatePenaltyRequest;
+import com.library.model.entity.AppUser;
+import com.library.model.entity.Loan;
 import com.library.model.entity.Penalty;
 import com.library.model.enums.PenaltyStatus;
+import com.library.repository.AppUserRepository;
+import com.library.repository.LoanRepository;
 import com.library.repository.PenaltyRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +24,8 @@ import java.time.LocalDateTime;
 @Transactional(readOnly = true)
 public class PenaltyService {
     private final PenaltyRepository penaltyRepository;
+    private final LoanRepository loanRepository;
+    private final AppUserRepository appUserRepository;
 
     public Page<PenaltyDto> getUserPenalties(Long userId, PenaltyStatus status, Pageable pageable) {
         return penaltyRepository.findByUserIdAndStatus(userId, status, pageable)
@@ -39,22 +48,56 @@ public class PenaltyService {
         return toDto(penaltyRepository.save(penalty));
     }
 
-    private PenaltyDto toDto(Penalty penalty) {
-        PenaltyDto.UserSummaryDto userDto = new PenaltyDto.UserSummaryDto(
-                penalty.getUser().getId(),
-                penalty.getUser().getFirstName(),
-                penalty.getUser().getLastName()
+    private PenaltyDto toDto(Penalty p) {
+        PenaltyDto dto = new PenaltyDto();
+        dto.setId(p.getId());
+
+        PenaltyDto.UserSummaryDto user = new PenaltyDto.UserSummaryDto(
+                p.getUser().getId(),
+                p.getUser().getFirstName(),
+                p.getUser().getLastName()
         );
 
-        return new PenaltyDto(
-                penalty.getId(),
-                userDto,
-                penalty.getLoanId(),
-                penalty.getAmount(),
-                penalty.getReason(),
-                penalty.getStatus(),
-                penalty.getCreatedAt(),
-                penalty.getResolvedAt()
-        );
+        dto.setUser(user);
+        dto.setUserId(p.getUser().getId());
+        dto.setLoanId(p.getLoan() != null ? p.getLoan().getId() : null);
+
+        dto.setAmount(p.getAmount());
+        dto.setReason(p.getReason());
+        dto.setStatus(p.getStatus());
+        dto.setCreatedAt(p.getCreatedAt());
+        dto.setResolvedAt(p.getResolvedAt());
+
+        // pola „frontendowe”
+        dto.setIssuedAt(p.getCreatedAt());
+        dto.setPaid(p.getStatus() == PenaltyStatus.PAID);
+
+        return dto;
     }
+
+    public PenaltyDto createPenalty(@Valid AdminCreatePenaltyRequest req) {
+
+        AppUser user = appUserRepository.findById(req.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Loan loan = null;
+        if (req.getLoanId() != null) {
+            loan = loanRepository.findById(req.getLoanId())
+                    .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
+        }
+
+        Penalty penalty = new Penalty();
+        penalty.setUser(user);
+        penalty.setLoan(loan);
+        penalty.setAmount(req.getAmount());
+        penalty.setReason(req.getReason());
+        penalty.setStatus(PenaltyStatus.OPEN);
+        penalty.setCreatedAt(LocalDateTime.now());
+        penalty.setResolvedAt(null);
+
+        Penalty saved = penaltyRepository.save(penalty);
+
+        return toDto(saved);
+    }
+
 }

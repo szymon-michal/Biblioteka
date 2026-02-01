@@ -1,5 +1,6 @@
 package com.library.dto;
 
+import com.library.model.enums.LoanStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,19 +13,13 @@ import java.util.List;
 @AllArgsConstructor
 public class LoanDto {
     private Long id;
-
     private UserSummaryDto user;
     private BookCopySummaryDto bookCopy;
-
     private LocalDateTime loanDate;
     private LocalDateTime dueDate;
     private LocalDateTime returnDate;
-
-    private String status;
-    private Integer extensionsCount;
-
-    public LoanDto(Long id, UserSummaryDto user, BookCopySummaryDto bookCopy, LocalDateTime loanDate, LocalDateTime dueDate, LocalDateTime returnDate, String name, Short extensionsCount) {
-    }
+    private LoanStatus status;
+    private Short extensionsCount;
 
     @Data
     @NoArgsConstructor
@@ -50,15 +45,6 @@ public class LoanDto {
     public static class BookSummaryDto {
         private Long id;
         private String title;
-        private List<AuthorSummaryDto> authors;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AuthorSummaryDto {
-        private Long id;
-        private String firstName;
-        private String lastName;
+        private List<AuthorDto> authors;
     }
 }

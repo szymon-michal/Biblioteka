@@ -10,6 +10,7 @@ import com.library.model.enums.UserStatus;
 import com.library.service.LoanService;
 import com.library.service.PenaltyService;
 import com.library.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import com.library.dto.request.UpdateUserRequest;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -58,4 +60,27 @@ public class AdminUserController {
         String tempPassword = userService.resetUserPassword(id);
         return ResponseEntity.ok(Map.of("temporaryPassword", tempPassword));
     }
+//    @PutMapping("/{id}")
+//    public UserDto update(
+//            @PathVariable Long id,
+//            @RequestBody UpdateUserRequest req
+//    ) {
+//        return userService.updateUser(id, req);
+//    }
+//
+//    @DeleteMapping("/{id}")
+//    public void delete(@PathVariable Long id) {
+//        userService.deleteUser(id);
+//    }
+    @PutMapping("/api/admin/users/{id}")
+    public ResponseEntity<UserDto> update(@PathVariable Long id, @RequestBody @Valid UpdateUserRequest req) {
+        return ResponseEntity.ok(userService.updateUser(id, req));
+    }
+
+    @DeleteMapping("/api/admin/users/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

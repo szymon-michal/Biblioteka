@@ -46,7 +46,7 @@ public class Loan {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LoanStatus status = LoanStatus.ACTIVE;
+    private LoanStatus status;
 
     @Column(name = "extensions_count", nullable = false)
     private Short extensionsCount = 0;

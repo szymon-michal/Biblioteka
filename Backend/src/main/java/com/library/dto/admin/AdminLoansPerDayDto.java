@@ -4,10 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class AdminLoansPerDayDto {
-    private String day;      // np. "2026-01-30"
-    private Long loansCount; // ilość wypożyczeń
+    private LocalDate day;
+    private long loansCount;
 }
