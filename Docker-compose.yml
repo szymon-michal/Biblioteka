@@ -46,7 +46,6 @@ services:
       MYSQL_DB: ${MYSQL_DB:-library}
       MYSQL_USER: ${MYSQL_USER:-library}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-library}
-      JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-3600}
       BACKEND_PORT: 8080
     ports:
