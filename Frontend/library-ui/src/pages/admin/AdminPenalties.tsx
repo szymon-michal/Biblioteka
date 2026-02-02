@@ -316,7 +316,7 @@ export default function AdminPenalties() {
 
                         <TextField
                             select
-                            label="Aktywne wypozyczenie (loan)"
+                            label="Wypozyczenie"
                             value={loanId}
                             onChange={(e) => setLoanId(e.target.value === "" ? "" : Number(e.target.value))}
                             disabled={!userId || loansForUser.length === 0}

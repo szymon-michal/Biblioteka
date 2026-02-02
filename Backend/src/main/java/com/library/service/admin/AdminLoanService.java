@@ -30,14 +30,35 @@ public class AdminLoanService {
 
     @Transactional(readOnly = true)
     public Page<LoanDto> list(Pageable pageable) {
-        return loanRepository.findAll(pageable).map(this::toDto);
+        Page<Loan> page = loanRepository.findAll(pageable);
+        updateOverdueIfNeeded(page.getContent());
+        return page.map(this::toDto);
     }
 
     @Transactional(readOnly = true)
     public LoanDto get(Long id) {
-        return loanRepository.findById(id)
-                .map(this::toDto)
+        Loan loan = loanRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
+        updateOverdueIfNeeded(java.util.List.of(loan));
+        return toDto(loan);
+    }
+
+    private void updateOverdueIfNeeded(java.util.List<Loan> loans) {
+        if (loans == null || loans.isEmpty()) return;
+        LocalDateTime now = LocalDateTime.now();
+        boolean changed = false;
+        for (Loan loan : loans) {
+            if (loan == null) continue;
+            if (loan.getStatus() == LoanStatus.ACTIVE
+                    && loan.getDueDate() != null
+                    && loan.getDueDate().isBefore(now)) {
+                loan.setStatus(LoanStatus.OVERDUE);
+                changed = true;
+            }
+        }
+        if (changed) {
+            loanRepository.saveAll(loans);
+        }
     }
 
     @Transactional
@@ -85,6 +106,42 @@ public class AdminLoanService {
             copy.setAvailable(true);
             bookCopyRepository.save(copy);
         }
+
+        return toDto(loanRepository.save(loan));
+    }
+
+    @Transactional
+    public LoanDto acceptReturn(Long id) {
+        Loan loan = loanRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
+
+        if (loan.getStatus() != LoanStatus.RETURN_REQUESTED) {
+            throw new IllegalStateException("Zwrot nie oczekuje na potwierdzenie");
+        }
+
+        loan.setStatus(LoanStatus.RETURNED);
+        if (loan.getReturnDate() == null) {
+            loan.setReturnDate(LocalDateTime.now());
+        }
+
+        BookCopy copy = loan.getBookCopy();
+        copy.setAvailable(true);
+        bookCopyRepository.save(copy);
+
+        return toDto(loanRepository.save(loan));
+    }
+
+    @Transactional
+    public LoanDto rejectReturn(Long id) {
+        Loan loan = loanRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Loan not found"));
+
+        if (loan.getStatus() != LoanStatus.RETURN_REQUESTED) {
+            throw new IllegalStateException("Zwrot nie oczekuje na potwierdzenie");
+        }
+
+        loan.setStatus(LoanStatus.RETURN_REJECTED);
+        loan.setReturnDate(null);
 
         return toDto(loanRepository.save(loan));
     }

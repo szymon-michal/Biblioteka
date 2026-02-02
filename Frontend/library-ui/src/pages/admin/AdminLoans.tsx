@@ -41,6 +41,22 @@ type LoanRow = {
 
 type PageResponse<T> = { content: T[] };
 
+const STATUS_STYLES: Record<
+    string,
+    { label: string; color: "default" | "success" | "info" | "warning" | "error" }
+> = {
+    ACTIVE: { label: "Wypozyczona", color: "info" },
+    OVERDUE: { label: "Po terminie", color: "error" },
+    RETURN_REQUESTED: { label: "W procesie oddawania", color: "warning" },
+    RETURN_REJECTED: { label: "Nie otrzymana", color: "error" },
+    RETURNED: { label: "Oddana", color: "success" },
+    LOST: { label: "Zgubiona", color: "error" },
+};
+
+function getStatusStyle(value?: string | null) {
+    if (!value) return { label: "-", color: "default" as const };
+    return STATUS_STYLES[value] || { label: value, color: "default" as const };
+}
 function toLocalDate(value?: string | null) {
     if (!value) return "";
     const d = new Date(value);
@@ -142,6 +158,36 @@ export default function AdminLoans() {
         }
     }
 
+    async function acceptReturn(id: number) {
+        if (!confirm(`Potwierdzić zwrot wypożyczenia #${id}?`)) return;
+        try {
+            setLoading(true);
+            setErr(null);
+            await api.post(`/admin/loans/${id}/return/accept`);
+            setToast(`Potwierdzono zwrot #${id}`);
+            await load();
+        } catch (e: any) {
+            setErr(e?.response?.data?.message || e?.message || "Nie udało się potwierdzić zwrotu");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function rejectReturn(id: number) {
+        if (!confirm(`Odrzucić zwrot wypożyczenia #${id}?`)) return;
+        try {
+            setLoading(true);
+            setErr(null);
+            await api.post(`/admin/loans/${id}/return/reject`);
+            setToast(`Odrzucono zwrot #${id}`);
+            await load();
+        } catch (e: any) {
+            setErr(e?.response?.data?.message || e?.message || "Nie udało się odrzucić zwrotu");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     function openPenaltyDialog(l: LoanRow) {
         setPenaltyLoan(l);
         setPenaltyAmount("10.00");
@@ -208,7 +254,32 @@ export default function AdminLoans() {
                 sortable: false,
                 renderCell: (p) => formatAuthors(p?.row?.bookCopy?.book?.authors),
             },
-            { field: "status", headerName: "Status", width: 110 },
+            {
+                field: "status",
+                headerName: "Status",
+                width: 200,
+                sortable: false,
+                renderCell: (p) => {
+                    const s = getStatusStyle(p?.row?.status ?? null);
+                    const key = s.color === "default" ? "grey" : s.color;
+                    return (
+                        <Box
+                            sx={{
+                                px: 1,
+                                py: 0.35,
+                                borderRadius: 999,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                bgcolor: key === "grey" ? "grey.200" : `${key}.light`,
+                                color: key === "grey" ? "grey.800" : `${key}.dark`,
+                                display: "inline-block",
+                            }}
+                        >
+                            {s.label}
+                        </Box>
+                    );
+                },
+            },
             { field: "loanDate", headerName: "Wypożyczono", width: 130, renderCell: (p) => formatDate(p?.row?.loanDate) },
             { field: "dueDate", headerName: "Termin", width: 130, renderCell: (p) => formatDate(p?.row?.dueDate) },
             { field: "returnDate", headerName: "Zwrócono", width: 130, renderCell: (p) => formatDate(p?.row?.returnDate) },
@@ -223,6 +294,16 @@ export default function AdminLoans() {
                         <Button size="small" variant="outlined" onClick={() => openEditLoan(p?.row)} disabled={loading}>
                             Edytuj
                         </Button>
+                        {p?.row?.status === "RETURN_REQUESTED" ? (
+                            <>
+                                <Button size="small" variant="contained" color="success" onClick={() => acceptReturn(p?.row?.id)} disabled={loading}>
+                                    Potwierdz zwrot
+                                </Button>
+                                <Button size="small" variant="outlined" color="error" onClick={() => rejectReturn(p?.row?.id)} disabled={loading}>
+                                    Odrzuc zwrot
+                                </Button>
+                            </>
+                        ) : null}
                         <Button size="small" color="warning" variant="contained" onClick={() => openPenaltyDialog(p?.row)} disabled={loading}>
                             Nałóż karę
                         </Button>
@@ -268,9 +349,11 @@ export default function AdminLoans() {
                     <Stack spacing={2} sx={{ mt: 1 }}>
                         <TextField select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
                             <MenuItem value="ACTIVE">ACTIVE</MenuItem>
-                            <MenuItem value="RETURNED">RETURNED</MenuItem>
                             <MenuItem value="OVERDUE">OVERDUE</MenuItem>
-                            <MenuItem value="CANCELLED">CANCELLED</MenuItem>
+                            <MenuItem value="RETURN_REQUESTED">RETURN_REQUESTED</MenuItem>
+                            <MenuItem value="RETURN_REJECTED">RETURN_REJECTED</MenuItem>
+                            <MenuItem value="RETURNED">RETURNED</MenuItem>
+                            <MenuItem value="LOST">LOST</MenuItem>
                         </TextField>
 
                         <TextField
@@ -331,3 +414,12 @@ export default function AdminLoans() {
         </Box>
     );
 }
+
+
+
+
+
+
+
+
+

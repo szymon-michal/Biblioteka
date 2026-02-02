@@ -47,6 +47,16 @@ public class AdminLoanController {
         return adminLoanService.update(id, status, dueDate, returnDate);
     }
 
+    @PostMapping("/{id}/return/accept")
+    public LoanDto acceptReturn(@PathVariable Long id) {
+        return adminLoanService.acceptReturn(id);
+    }
+
+    @PostMapping("/{id}/return/reject")
+    public LoanDto rejectReturn(@PathVariable Long id) {
+        return adminLoanService.rejectReturn(id);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         adminLoanService.delete(id);

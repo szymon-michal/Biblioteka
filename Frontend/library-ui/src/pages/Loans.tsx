@@ -20,6 +20,22 @@ type PageResponse<T> = {
     totalElements?: number;
 };
 
+const STATUS_STYLES: Record<
+    string,
+    { label: string; color: "default" | "success" | "info" | "warning" | "error" }
+> = {
+    ACTIVE: { label: "Wypozyczona", color: "info" },
+    OVERDUE: { label: "Po terminie", color: "error" },
+    RETURN_REQUESTED: { label: "W procesie oddawania", color: "warning" },
+    RETURN_REJECTED: { label: "Nie otrzymana", color: "error" },
+    RETURNED: { label: "Oddana", color: "success" },
+    LOST: { label: "Zgubiona", color: "error" },
+};
+
+function getStatusStyle(value?: string | null) {
+    if (!value) return { label: "-", color: "default" as const };
+    return STATUS_STYLES[value] || { label: value, color: "default" as const };
+}
 function formatDateTime(value?: string | null) {
     if (!value) return "—";
     const d = new Date(value);
@@ -36,7 +52,7 @@ export function LoansPage() {
     const [toast, setToast] = React.useState<string | null>(null); // spinner tylko dla klikniętego wiersza
 
     async function returnLoan(id: number) {
-        if (!confirm(`Na pewno oznaczyć wypożyczenie #${id} jako zwrócone?`)) return;
+        if (!confirm(`Na pewno zglosic zwrot wypozyczenia #${id}?`)) return;
         try {
             setLoading(true);
             setErr(null);
@@ -131,7 +147,32 @@ export function LoansPage() {
                 width: 140,
                 valueGetter: (_v, row) => row.bookCopy?.inventoryCode ?? "—",
             },
-            { field: "status", headerName: "Status", width: 120, valueGetter: (_v, row) => row.status ?? "—" },
+            {
+                field: "status",
+                headerName: "Status",
+                width: 200,
+                sortable: false,
+                renderCell: (p) => {
+                    const s = getStatusStyle(p?.row?.status ?? null);
+                    const key = s.color === "default" ? "grey" : s.color;
+                    return (
+                        <Box
+                            sx={{
+                                px: 1,
+                                py: 0.35,
+                                borderRadius: 999,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                bgcolor: key === "grey" ? "grey.200" : `${key}.light`,
+                                color: key === "grey" ? "grey.800" : `${key}.dark`,
+                                display: "inline-block",
+                            }}
+                        >
+                            {s.label}
+                        </Box>
+                    );
+                },
+            },
             {
                 field: "loanDate",
                 headerName: "Data wypożyczenia",
@@ -178,10 +219,13 @@ export function LoansPage() {
                             size="small"
                             variant="contained"
                             color="success"
-                            disabled={loading || p?.row?.status !== "ACTIVE"}
+                            disabled={
+                                loading ||
+                                !["ACTIVE", "OVERDUE", "RETURN_REJECTED"].includes(String(p?.row?.status || ""))
+                            }
                             onClick={() => returnLoan(p.row.id)}
                         >
-                            Oddaj
+                            Zglos zwrot
                         </Button>
                     </Stack>
                 ),
@@ -221,3 +265,8 @@ export function LoansPage() {
         </Box>
     );
 }
+
+
+
+
+

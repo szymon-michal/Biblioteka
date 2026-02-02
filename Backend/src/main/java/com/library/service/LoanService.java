@@ -134,7 +134,7 @@ public class LoanService {
     }
 
     /**
-     * Zwrot: tylko właściciel i tylko gdy ACTIVE.
+     * Zwrot: tylko właściciel. Najpierw powstaje prośba o potwierdzenie zwrotu.
      */
     @Transactional
     public LoanDto returnBook(Long loanId, Long userId) {
@@ -149,19 +149,14 @@ public class LoanService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nie możesz zwrócić cudzego wypożyczenia");
         }
 
-        if (loan.getStatus() != LoanStatus.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Można zwrócić tylko aktywne wypożyczenie");
+        if (loan.getStatus() != LoanStatus.ACTIVE
+                && loan.getStatus() != LoanStatus.OVERDUE
+                && loan.getStatus() != LoanStatus.RETURN_REJECTED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Można zgłosić zwrot tylko aktywnego/po terminie wypożyczenia");
         }
 
         loan.setReturnDate(LocalDateTime.now());
-        loan.setStatus(LoanStatus.RETURNED);
-        loanRepository.save(loan);
-
-        BookCopy bookCopy = bookCopyRepository.findById(loan.getBookCopyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Book copy not found"));
-
-        bookCopy.setStatus(BookCopyStatus.AVAILABLE);
-        bookCopyRepository.save(bookCopy);
+        loan.setStatus(LoanStatus.RETURN_REQUESTED);
 
         return toDto(loanRepository.save(loan));
     }
@@ -225,5 +220,22 @@ public class LoanService {
         return authors.stream()
                 .map(a -> new AuthorDto(a.getId(), a.getFirstName(), a.getLastName()))
                 .collect(Collectors.toList());
+    }
+    private void updateOverdueIfNeeded(List<Loan> loans) {
+        if (loans == null || loans.isEmpty()) return;
+        LocalDateTime now = LocalDateTime.now();
+        boolean changed = false;
+        for (Loan loan : loans) {
+            if (loan == null) continue;
+            if (loan.getStatus() == LoanStatus.ACTIVE
+                    && loan.getDueDate() != null
+                    && loan.getDueDate().isBefore(now)) {
+                loan.setStatus(LoanStatus.OVERDUE);
+                changed = true;
+            }
+        }
+        if (changed) {
+            loanRepository.saveAll(loans);
+        }
     }
 }

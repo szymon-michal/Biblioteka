@@ -45,7 +45,7 @@ public class LoanController {
 
         List<LoanStatus> statuses = status != null
                 ? Arrays.asList(status)
-                : Arrays.asList(LoanStatus.ACTIVE, LoanStatus.OVERDUE);
+                : Arrays.asList(LoanStatus.values());
 
         Page<LoanDto> loans = loanService.getUserLoans(userId, statuses, pageable);
         return ResponseEntity.ok(loans);
@@ -88,3 +88,4 @@ public class LoanController {
         return ResponseEntity.ok(loanService.returnBook(loanId, userId));
     }
 }
+

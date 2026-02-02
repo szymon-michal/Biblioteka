@@ -127,7 +127,9 @@ export function DashboardPage() {
         const page = await apiFetch<PageResponse<MyLoanDto>>(`/me/loans`);
         if (!alive) return;
 
-        const active = (page?.content ?? []).filter((x) => x.status === "ACTIVE");
+        const active = (page?.content ?? []).filter((x) =>
+          ["ACTIVE", "OVERDUE", "RETURN_REQUESTED", "RETURN_REJECTED"].includes(String(x?.status || ""))
+        );
         setMyLoans(active);
         setMyErr(null);
       } catch (e: any) {

@@ -110,7 +110,7 @@ CREATE TABLE loan (
     loan_date        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     due_date         DATETIME NOT NULL,
     return_date      DATETIME NULL,
-    status           ENUM('ACTIVE', 'RETURNED', 'OVERDUE', 'LOST') NOT NULL DEFAULT 'ACTIVE',
+    status           ENUM('ACTIVE', 'OVERDUE', 'RETURN_REQUESTED', 'RETURN_REJECTED', 'RETURNED', 'LOST') NOT NULL DEFAULT 'ACTIVE',
     extensions_count SMALLINT NOT NULL DEFAULT 0,
     created_by       BIGINT NULL,
     created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

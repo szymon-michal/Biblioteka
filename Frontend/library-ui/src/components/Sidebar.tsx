@@ -53,7 +53,10 @@ export function Sidebar(props: { current: RouteKey; onNavigate: (r: RouteKey) =>
       try {
         const data = await apiFetch<any>('/me/loans')
         const loans = Array.isArray(data) ? data : data?.content || []
-        setActiveLoans(loans.length)
+        const active = loans.filter(
+          (l: any) => ['ACTIVE', 'OVERDUE', 'RETURN_REQUESTED', 'RETURN_REJECTED'].includes(String(l?.status || ''))
+        )
+        setActiveLoans(active.length)
       } catch {
         setActiveLoans(0)
       }

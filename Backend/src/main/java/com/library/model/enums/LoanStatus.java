@@ -1,5 +1,10 @@
 package com.library.model.enums;
 
 public enum LoanStatus {
-    ACTIVE, RETURNED, OVERDUE, LOST
+    ACTIVE,
+    OVERDUE,
+    RETURN_REQUESTED,
+    RETURN_REJECTED,
+    RETURNED,
+    LOST
 }
