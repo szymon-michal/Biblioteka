@@ -18,6 +18,19 @@ services:
       - db_data:/var/lib/mysql
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./Frontend/library-ui
+      dockerfile: Dockerfile.Front
+    container_name: library-frontend
+    depends_on:
+      - backend
+    env_file:
+      - ./Frontend/library-ui/.env
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+
   backend:
     build:
       context: ./Backend
