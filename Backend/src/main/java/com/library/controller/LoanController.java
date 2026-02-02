@@ -61,6 +61,15 @@ public class LoanController {
         return ResponseEntity.ok(loans);
     }
 
+    @PostMapping("/loans")
+    public ResponseEntity<LoanDto> createLoan(
+            @CurrentUser Long userId,
+            @Valid @RequestBody CreateLoanRequest req
+    ) {
+        LoanDto loan = loanService.createLoan(userId, req.getBookId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(loan);
+    }
+
     @PostMapping("/loans/{loanId}/extend")
     public ResponseEntity<LoanDto> extendLoan(
             @PathVariable Long loanId,

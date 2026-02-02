@@ -12,6 +12,24 @@ export const theme = createTheme({
   },
   shape: { borderRadius: 14 },
   typography: {
-    fontFamily: ['Inter', 'Roboto', 'system-ui', 'Arial', 'sans-serif'].join(','),
+    fontFamily: ['Manrope', 'system-ui', 'Segoe UI', 'Arial', 'sans-serif'].join(','),
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          borderRadius: 12,
+          fontWeight: 700,
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 600,
+        },
+      },
+    },
   },
 })

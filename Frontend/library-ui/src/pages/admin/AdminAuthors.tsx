@@ -13,8 +13,7 @@ import {
     DialogActions,
     TextField,
 } from '@mui/material'
-import { DataGrid } from '@mui/x-data-grid'
-import type { GridColDef } from '@mui/x-data-grid/models'
+import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { apiFetch } from '../../lib/api'
 
 type AuthorDto = { id: number; firstName: string; lastName: string }
@@ -38,15 +37,15 @@ export default function AdminAuthors() {
             {
                 field: 'actions',
                 headerName: 'Akcje',
-                width: 220,
+                width: 240,
                 sortable: false,
                 filterable: false,
                 renderCell: (p) => (
                     <Stack direction="row" spacing={1}>
-                        <Button size="small" onClick={() => p?.row && onEdit(p.row)}>
+                        <Button size="small" variant="outlined" onClick={() => p?.row && onEdit(p.row)}>
                             Edytuj
                         </Button>
-                        <Button size="small" color="error" onClick={() => p?.row?.id && onDelete(p.row.id)}>
+                        <Button size="small" color="error" variant="contained" onClick={() => p?.row?.id && onDelete(p.row.id)}>
                             Usuń
                         </Button>
                     </Stack>
@@ -59,10 +58,21 @@ export default function AdminAuthors() {
     async function load() {
         setErr(null)
         try {
-            const res = await apiFetch<PageResponse<AuthorDto>>(`/admin/authors?page=${page}&size=${pageSize}`)
-            const content = Array.isArray(res?.content) ? res.content : []
+            const res = await apiFetch<AuthorDto[] | PageResponse<AuthorDto>>(`/admin/authors?page=${page}&size=${pageSize}`)
+            
+            let content: AuthorDto[] = []
+            let totalElements = 0
+
+            if (Array.isArray(res)) {
+                content = res
+                totalElements = res.length
+            } else if (res && Array.isArray(res.content)) {
+                content = res.content
+                totalElements = res.totalElements ?? res.content.length
+            }
+
             setRows(content)
-            setTotal(res?.totalElements ?? content.length)
+            setTotal(totalElements)
         } catch (e: any) {
             setErr(e?.message || 'Nie udało się pobrać autorów')
             setRows([])

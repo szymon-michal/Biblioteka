@@ -15,8 +15,7 @@ import {
     Typography,
     Snackbar,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import type { GridColDef } from "@mui/x-data-grid/models";
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { api } from "../../lib/api";
 import { formatAuthors } from "../../lib/formatters";
 

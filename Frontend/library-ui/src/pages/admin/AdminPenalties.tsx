@@ -23,19 +23,28 @@ type PenaltyRow = {
     id: number;
     userId: number;
     loanId: number;
-    amount: string; // backend zwraca BigDecimal jako string często
+    user?: { id?: number; firstName?: string; lastName?: string } | null;
+    amount: string; // backend zwraca BigDecimal jako string czesto
     reason: string;
     status: "OPEN" | "PAID" | "CANCELLED" | string;
     createdAt?: string | null;
     resolvedAt?: string | null;
 };
 
-type PageResponse<T> = { content: T[] };
-
 type UserOption = {
     id: number;
-    label: string; // "First Last (email)"
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
 };
+
+type LoanOption = {
+    id: number;
+    book?: { title?: string | null } | null;
+    bookCopy?: { book?: { title?: string | null } | null } | null;
+};
+
+type PageResponse<T> = { content: T[] };
 
 export default function AdminPenalties() {
     const [rows, setRows] = useState<PenaltyRow[]>([]);
@@ -43,13 +52,23 @@ export default function AdminPenalties() {
     const [err, setErr] = useState<string | null>(null);
     const [toast, setToast] = useState<string | null>(null);
 
-    const [users, setUsers] = useState<UserOption[]>([]);
-
     const [openCreate, setOpenCreate] = useState(false);
+    const [users, setUsers] = useState<UserOption[]>([]);
+    const [loansForUser, setLoansForUser] = useState<LoanOption[]>([]);
+    const [loanTitles, setLoanTitles] = useState<Record<number, string>>({});
     const [userId, setUserId] = useState<number | "">("");
     const [loanId, setLoanId] = useState<number | "">("");
     const [amount, setAmount] = useState<string>("10.00");
     const [reason, setReason] = useState<string>("");
+
+    const userLabelById = useMemo(() => {
+        const map: Record<number, string> = {};
+        for (const u of users) {
+            const full = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+            map[u.id] = full || u.email || `#${u.id}`;
+        }
+        return map;
+    }, [users]);
 
     const load = async () => {
         setLoading(true);
@@ -58,7 +77,7 @@ export default function AdminPenalties() {
             const res = await api.get<PageResponse<PenaltyRow>>("/admin/penalties?page=0&size=200");
             setRows(res.data?.content ?? []);
         } catch (e: any) {
-            setErr(e?.response?.data?.message || e?.message || "Nie udało się pobrać kar");
+            setErr(e?.response?.data?.message || e?.message || "Nie udalo sie pobrac kar");
             setRows([]);
         } finally {
             setLoading(false);
@@ -67,24 +86,65 @@ export default function AdminPenalties() {
 
     const loadUsers = async () => {
         try {
-            const res = await api.get<PageResponse<any> | any[]>("/admin/users?page=0&size=500");
-            const arr = Array.isArray(res.data) ? res.data : res.data?.content ?? [];
-            setUsers(
-                arr.map((u: any) => ({
-                    id: u.id,
-                    label: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() + (u.email ? ` (${u.email})` : ''),
-                }))
-            );
+            const res = await api.get<PageResponse<UserOption> | UserOption[]>("/admin/users?page=0&size=1000");
+            const data: any = res.data;
+            const arr: UserOption[] = Array.isArray(data) ? data : data?.content ?? [];
+            setUsers(arr);
         } catch {
-            // w razie błędu po prostu nie blokujemy widoku
             setUsers([]);
         }
+    };
+
+    const loadLoanTitles = async () => {
+        try {
+            const res = await api.get<PageResponse<any> | any[]>("/admin/loans?page=0&size=500");
+            const data: any = res.data;
+            const arr: any[] = Array.isArray(data) ? data : data?.content ?? [];
+            const map: Record<number, string> = {};
+            for (const l of arr) {
+                const title = l?.bookCopy?.book?.title ?? l?.book?.title ?? l?.bookTitle ?? "";
+                if (l?.id != null && title) map[l.id] = title;
+            }
+            setLoanTitles(map);
+        } catch {
+            setLoanTitles({});
+        }
+    };
+
+    const loadActiveLoansForUser = async (uid: number) => {
+        const tryUrls = [
+            `/admin/loans/active?userId=${uid}`,
+            `/admin/loans?userId=${uid}&status=ACTIVE&page=0&size=200`,
+            `/admin/users/${uid}/loans/active`,
+        ];
+        for (const url of tryUrls) {
+            try {
+                const res = await api.get<PageResponse<LoanOption> | LoanOption[]>(url);
+                const data: any = res.data;
+                const arr: LoanOption[] = Array.isArray(data) ? data : data?.content ?? [];
+                setLoansForUser(arr);
+                return;
+            } catch {
+                // try next
+            }
+        }
+        setLoansForUser([]);
     };
 
     useEffect(() => {
         void load();
         void loadUsers();
+        void loadLoanTitles();
     }, []);
+
+    useEffect(() => {
+        if (userId === "" || userId == null) {
+            setLoansForUser([]);
+            setLoanId("");
+            return;
+        }
+        void loadActiveLoansForUser(Number(userId));
+    }, [userId]);
 
     async function create() {
         try {
@@ -92,12 +152,12 @@ export default function AdminPenalties() {
             setErr(null);
 
             if (userId === "" || loanId === "") {
-                setErr("userId i loanId są wymagane.");
+                setErr("userId i loanId sa wymagane.");
                 return;
             }
             const amt = Number(amount);
             if (!Number.isFinite(amt) || amt <= 0) {
-                setErr("Kwota musi być liczbą > 0 (np. 10 lub 10.50).");
+                setErr("Kwota musi byc liczba > 0 (np. 10 lub 10.50)." );
                 return;
             }
 
@@ -108,7 +168,7 @@ export default function AdminPenalties() {
                 reason: reason.trim() || "Kara administracyjna",
             });
 
-            setToast("Dodano karę");
+            setToast("Dodano kare");
             setOpenCreate(false);
             setUserId("");
             setLoanId("");
@@ -116,7 +176,7 @@ export default function AdminPenalties() {
             setReason("");
             await load();
         } catch (e: any) {
-            setErr(e?.response?.data?.message || e?.message || "Nie udało się dodać kary");
+            setErr(e?.response?.data?.message || e?.message || "Nie udalo sie dodac kary");
         } finally {
             setLoading(false);
         }
@@ -130,46 +190,58 @@ export default function AdminPenalties() {
             setToast(`Zmieniono status kary #${id} na ${status}`);
             await load();
         } catch (e: any) {
-            setErr(e?.response?.data?.message || e?.message || "Nie udało się zmienić statusu kary");
+            setErr(e?.response?.data?.message || e?.message || "Nie udalo sie zmienic statusu kary");
         } finally {
             setLoading(false);
         }
     }
 
     async function remove(id: number) {
-        if (!confirm(`Na pewno usunąć karę #${id}?`)) return;
+        if (!confirm(`Na pewno usunac kare #${id}?`)) return;
         try {
             setLoading(true);
             setErr(null);
             await api.delete(`/admin/penalties/${id}`);
-            setToast(`Usunięto karę #${id}`);
+            setToast(`Usunieto kare #${id}`);
             await load();
         } catch (e: any) {
-            setErr(e?.response?.data?.message || e?.message || "Nie udało się usunąć kary");
+            setErr(e?.response?.data?.message || e?.message || "Nie udalo sie usunac kary");
         } finally {
             setLoading(false);
         }
     }
 
-    const userLabelById = useMemo(() => {
-        const m = new Map<number, string>();
-        users.forEach((u) => m.set(u.id, u.label));
-        return m;
-    }, [users]);
-
     const cols = useMemo<GridColDef<PenaltyRow>[]>(
         () => [
             { field: "id", headerName: "ID", width: 90 },
             {
-                field: "userId",
-                headerName: "Użytkownik",
-                width: 260,
-                valueGetter: (p) => userLabelById.get(p.row.userId) ?? String(p.row.userId),
+                field: "user",
+                headerName: "Uzytkownik",
+                minWidth: 200,
+                flex: 1,
+                renderCell: (p) => {
+                    const u = p?.row?.user;
+                    if (u && (u.firstName || u.lastName)) {
+                        return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+                    }
+                    return userLabelById[p?.row?.userId] || `#${p?.row?.userId ?? "-"}`;
+                },
             },
-            { field: "loanId", headerName: "Loan", width: 100 },
-            { field: "amount", headerName: "Kwota", width: 120 },
+            {
+                field: "loan",
+                headerName: "Ksiazka",
+                minWidth: 220,
+                flex: 1,
+                renderCell: (p) => loanTitles[p?.row?.loanId] || `#${p?.row?.loanId ?? "-"}`,
+            },
+            {
+                field: "amount",
+                headerName: "Kwota",
+                width: 140,
+                renderCell: (p) => (p?.row?.amount ? `${p.row.amount} PLN` : "-"),
+            },
             { field: "status", headerName: "Status", width: 120 },
-            { field: "reason", headerName: "Powód", flex: 1, minWidth: 220 },
+            { field: "reason", headerName: "Powod", flex: 1, minWidth: 220 },
             {
                 field: "actions",
                 headerName: "Akcje",
@@ -188,13 +260,13 @@ export default function AdminPenalties() {
                             CANCEL
                         </Button>
                         <Button size="small" color="error" variant="contained" onClick={() => remove(p?.row?.id)} disabled={loading}>
-                            Usuń
+                            Usun
                         </Button>
                     </Stack>
                 ),
             },
         ],
-        [loading, userLabelById]
+        [loading, loanTitles, userLabelById]
     );
 
     return (
@@ -204,7 +276,7 @@ export default function AdminPenalties() {
                     Kary
                 </Typography>
                 <Button variant="contained" onClick={() => setOpenCreate(true)} disabled={loading}>
-                    + Dodaj karę
+                    + Dodaj kare
                 </Button>
             </Stack>
 
@@ -228,35 +300,48 @@ export default function AdminPenalties() {
             </Card>
 
             <Dialog open={openCreate} onClose={() => setOpenCreate(false)} fullWidth maxWidth="sm">
-                <DialogTitle>Dodaj karę</DialogTitle>
+                <DialogTitle>Dodaj kare</DialogTitle>
                 <DialogContent>
                     <Stack spacing={2} sx={{ mt: 1 }}>
                         <Autocomplete
                             options={users}
                             value={users.find((u) => u.id === userId) ?? null}
-                            onChange={(_, v) => setUserId(v?.id ?? '')}
-                            getOptionLabel={(o) => o.label}
-                            isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Użytkownik"
-                                    placeholder="Wpisz imię/nazwisko/email…"
-                                />
-                            )}
+                            onChange={(_, val) => {
+                                setUserId(val?.id ?? "");
+                                setLoanId("");
+                            }}
+                            getOptionLabel={(o) => `${o.firstName ?? ""} ${o.lastName ?? ""}${o.email ? ` (${o.email})` : ""}`}
+                            renderInput={(params) => <TextField {...params} label="Uzytkownik" placeholder="Zacznij pisac imie/nazwisko/email" />}
                         />
+
                         <TextField
-                            label="loanId"
+                            select
+                            label="Aktywne wypozyczenie (loan)"
                             value={loanId}
                             onChange={(e) => setLoanId(e.target.value === "" ? "" : Number(e.target.value))}
-                            type="number"
-                        />
+                            disabled={!userId || loansForUser.length === 0}
+                            helperText={!userId ? "Najpierw wybierz uzytkownika" : loansForUser.length === 0 ? "Brak aktywnych wypozyczen dla tego uzytkownika" : ""}
+                        >
+                            <MenuItem value="">
+                                <em>Wybierz...</em>
+                            </MenuItem>
+                            {loansForUser.map((l) => {
+                                const bookTitle = (l as any)?.book?.title ?? (l as any)?.bookCopy?.book?.title ?? "";
+                                const copyId = (l as any)?.bookCopy?.id ?? (l as any)?.bookCopyId ?? "";
+                                const label = `#${l.id}${bookTitle ? ` - ${bookTitle}` : ""}${copyId ? ` (copy ${copyId})` : ""}`;
+                                return (
+                                    <MenuItem key={l.id} value={l.id}>
+                                        {label}
+                                    </MenuItem>
+                                );
+                            })}
+                        </TextField>
                         <TextField
                             label="Kwota (np. 10 lub 10.50)"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                         />
-                        <TextField label="Powód" value={reason} onChange={(e) => setReason(e.target.value)} />
+                        <TextField label="Powod" value={reason} onChange={(e) => setReason(e.target.value)} />
                     </Stack>
                 </DialogContent>
                 <DialogActions>

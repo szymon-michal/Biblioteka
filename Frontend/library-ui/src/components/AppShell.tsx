@@ -1,10 +1,10 @@
 import React from 'react'
-import { Box, Drawer, Container } from '@mui/material'
+import { Box, Drawer } from '@mui/material'
 import type { RouteKey } from '../routes'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 
-const drawerWidthPercent = 16 // 16% of viewport width
+const drawerWidth = 280
 
 export function AppShell(props: { current: RouteKey; onNavigate: (r: RouteKey) => void; children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false)
@@ -29,8 +29,12 @@ export function AppShell(props: { current: RouteKey; onNavigate: (r: RouteKey) =
         sx={{
           display: { xs: 'none', md: 'block' },
           flexShrink: 0,
-          width: `${drawerWidthPercent}vw`,
-          '& .MuiDrawer-paper': { width: `${drawerWidthPercent}vw`, boxSizing: 'border-box' },
+          width: drawerWidth,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            borderRight: '1px solid rgba(15, 23, 42, 0.08)',
+          },
         }}
       >
         <Sidebar current={props.current} onNavigate={props.onNavigate} />
@@ -40,15 +44,16 @@ export function AppShell(props: { current: RouteKey; onNavigate: (r: RouteKey) =
         component="main"
         sx={{
           flexGrow: 1,
-          width: { xs: '100%', md: `${100 - drawerWidthPercent}vw` },
+          width: { xs: '100%', md: `calc(100vw - ${drawerWidth}px)` },
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           height: '100vh',
+          background: 'linear-gradient(180deg, #f7f9fc 0%, #f3f6ff 100%)',
         }}
       >
         <Topbar current={props.current} onMenuClick={() => setMobileOpen(true)} />
-        <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+        <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 2, md: 3 } }}>
           {props.children}
         </Box>
       </Box>

@@ -47,6 +47,10 @@ export default function AdminUsers() {
 
     const [open, setOpen] = useState(false)
     const [editing, setEditing] = useState<UserDto | null>(null)
+    const [openPassword, setOpenPassword] = useState(false)
+    const [passwordUser, setPasswordUser] = useState<UserDto | null>(null)
+    const [newPassword, setNewPassword] = useState('')
+    const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
 
     const [q, setQ] = useState('')
 
@@ -72,15 +76,18 @@ export default function AdminUsers() {
             {
                 field: 'actions',
                 headerName: 'Akcje',
-                width: 260,
+                width: 420,
                 sortable: false,
                 filterable: false,
                 renderCell: (p) => (
-                    <Stack direction="row" spacing={1}>
-                        <Button size="small" onClick={() => onEdit(p?.row)}>
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                        <Button size="small" variant="outlined" onClick={() => onEdit(p?.row)}>
                             Edytuj
                         </Button>
-                        <Button size="small" color="error" onClick={() => onDelete(p?.row?.id)}>
+                        <Button size="small" variant="outlined" onClick={() => onChangePassword(p?.row)}>
+                            Haslo
+                        </Button>
+                        <Button size="small" color="error" variant="contained" onClick={() => onDelete(p?.row?.id)}>
                             Usuń
                         </Button>
                         <Button
@@ -100,15 +107,14 @@ export default function AdminUsers() {
     async function load() {
         setErr(null)
         try {
-            // 🔥 UWAGA: bez "/api" na początku – żeby nie zrobiło /api/api
-            const res = await apiFetch<PageResponse<UserDto>>(
+            const res = await apiFetch<UserDto[] | PageResponse<UserDto>>(
                 `/admin/users?page=${page}&size=${pageSize}&q=${encodeURIComponent(q || '')}`
             )
-            const content = Array.isArray(res?.content) ? res.content : []
+            const content = Array.isArray(res) ? res : Array.isArray(res?.content) ? res.content : []
             setRows(content)
-            setTotal(res?.totalElements ?? content.length)
+            setTotal(Array.isArray(res) ? res.length : res?.totalElements ?? content.length)
         } catch (e: any) {
-            setErr(e?.message || 'Nie udało się pobrać użytkowników')
+            setErr(e?.message || 'Nie udalo sie pobrac uzytkownikow')
             setRows([])
             setTotal(0)
         }
@@ -122,6 +128,14 @@ export default function AdminUsers() {
     function onEdit(u: UserDto) {
         setEditing({ ...u })
         setOpen(true)
+    }
+
+    function onChangePassword(u: UserDto) {
+        if (!u) return
+        setPasswordUser(u)
+        setNewPassword('')
+        setNewPasswordConfirm('')
+        setOpenPassword(true)
     }
 
     async function onSave() {
@@ -159,6 +173,31 @@ export default function AdminUsers() {
             load()
         } catch (e: any) {
             setErr(e?.message || 'Nie udało się zmienić statusu użytkownika')
+        }
+    }
+
+    async function onSetPassword() {
+        if (!passwordUser) return
+        if (!newPassword || newPassword.length < 8) {
+            setErr('Haslo musi miec min. 8 znakow')
+            return
+        }
+        if (newPassword !== newPasswordConfirm) {
+            setErr('Hasla nie sa takie same')
+            return
+        }
+
+        try {
+            await apiFetch(`/admin/users/${passwordUser.id}/password`, {
+                method: 'PATCH',
+                body: { newPassword },
+            } as any)
+            setOpenPassword(false)
+            setPasswordUser(null)
+            setNewPassword('')
+            setNewPasswordConfirm('')
+        } catch (e: any) {
+            setErr(e?.message || 'Nie udalo sie zmienic hasla')
         }
     }
 
@@ -268,6 +307,36 @@ export default function AdminUsers() {
                 <DialogActions>
                     <Button onClick={() => setOpen(false)}>Anuluj</Button>
                     <Button variant="contained" onClick={onSave}>
+                        Zapisz
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={openPassword} onClose={() => setOpenPassword(false)} fullWidth maxWidth="sm">
+                <DialogTitle>
+                    {passwordUser ? `Zmien haslo uzytkownika #${passwordUser.id}` : 'Zmien haslo'}
+                </DialogTitle>
+                <DialogContent sx={{ pt: 2 }}>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Nowe haslo"
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Powtorz nowe haslo"
+                            type="password"
+                            value={newPasswordConfirm}
+                            onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                            fullWidth
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenPassword(false)}>Anuluj</Button>
+                    <Button variant="contained" onClick={onSetPassword}>
                         Zapisz
                     </Button>
                 </DialogActions>

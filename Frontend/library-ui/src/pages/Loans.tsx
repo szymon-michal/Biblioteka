@@ -62,15 +62,21 @@ export function LoansPage() {
         if (status === 401) return "Zaloguj się ponownie (token wygasł lub brak tokenu).";
         return msg;
     }
-    async function extendLoan(loanId: number, additionalDays = 7) {
-        setBusyId(loanId);
+    async function extendLoan(row: LoanRow, additionalDays = 7) {
+        if (!row?.id) return;
+        const current = row.extensionsCount ?? 0;
+        if (current >= 2) {
+            setErr("Maksymalna liczba przed?u?e? (2) zosta?a osi?gni?ta");
+            return;
+        }
+        setBusyId(row.id);
         setErr(null);
         try {
-            await api.post(`/loans/${loanId}/extend`, { additionalDays });
-            setToast(`Przedłużono wypożyczenie #${loanId} o ${additionalDays} dni`);
+            await api.post(`/loans/${row.id}/extend`, { additionalDays });
+            setToast(`Przed?u?ono wypo?yczenie #${row.id} o ${additionalDays} dni`);
             await load();
         } catch (e: any) {
-            setErr(apiErrorMessage(e, "Nie udało się przedłużyć"));
+            setErr(apiErrorMessage(e, "Nie uda?o si? przed?u?y?"));
         } finally {
             setBusyId(null);
         }
@@ -163,8 +169,8 @@ export function LoansPage() {
                         <Button
                             size="small"
                             variant="outlined"
-                            disabled={loading || p?.row?.status !== "ACTIVE"}
-                            onClick={() => extendLoan(p.row.id)}
+                            disabled={loading || p?.row?.status !== "ACTIVE" || (p?.row?.extensionsCount ?? 0) >= 2}
+                            onClick={() => extendLoan(p.row)}
                         >
                             Przedłuż
                         </Button>

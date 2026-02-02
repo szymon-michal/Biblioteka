@@ -2,15 +2,15 @@ package com.library.dto.request;
 
 import com.library.model.enums.UserRole;
 import com.library.model.enums.UserStatus;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class UpdateUserRequest {
     private String email;
     private String firstName;

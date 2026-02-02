@@ -2,10 +2,7 @@ package com.library.controller;
 
 import com.library.dto.AuthResponse;
 import com.library.dto.UserDto;
-import com.library.dto.request.ChangePasswordRequest;
-import com.library.dto.request.LoginRequest;
-import com.library.dto.request.RegisterRequest;
-import com.library.dto.request.UpdateProfileRequest;
+import com.library.dto.request.*;
 import com.library.service.AuthService;
 import com.library.service.UserService;
 import com.library.security.CurrentUser;
@@ -42,16 +39,16 @@ public class AuthController {
     }
 
     @PatchMapping("/change-password")
-    public ResponseEntity<Void> changePassword(@CurrentUser Long userId, 
+    public ResponseEntity<Void> changePassword(@CurrentUser Long userId,
                                                @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/me/profile")
-    public ResponseEntity<UserDto> updateProfile(@CurrentUser Long userId, 
-                                                 @Valid @RequestBody UpdateProfileRequest request) {
-        UserDto user = userService.updateUserProfile(userId, request);
+    public ResponseEntity<UserDto> updateProfile(@CurrentUser Long userId,
+                                                 @Valid @RequestBody UpdateUserRequest request) {
+        UserDto user = userService.updateUser(userId, request);
         return ResponseEntity.ok(user);
     }
 }

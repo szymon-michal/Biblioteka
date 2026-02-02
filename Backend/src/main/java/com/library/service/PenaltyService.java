@@ -74,8 +74,8 @@ public class PenaltyService {
 
         return dto;
     }
-
-    public PenaltyDto createPenalty(@Valid AdminCreatePenaltyRequest req) {
+@Transactional
+public PenaltyDto createPenalty(@Valid AdminCreatePenaltyRequest req) {
 
         AppUser user = appUserRepository.findById(req.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
@@ -87,7 +87,9 @@ public class PenaltyService {
         }
 
         Penalty penalty = new Penalty();
+        penalty.setUserId(user.getId());
         penalty.setUser(user);
+        penalty.setLoanId(loan != null ? loan.getId() : null);
         penalty.setLoan(loan);
         penalty.setAmount(req.getAmount());
         penalty.setReason(req.getReason());

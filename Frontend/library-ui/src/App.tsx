@@ -6,7 +6,6 @@ import { RegisterPage } from './pages/Register'
 import { DashboardPage } from './pages/Dashboard'
 import { CatalogPage } from './pages/Catalog'
 import { LoansPage } from './pages/Loans'
-import { MembersPage } from './pages/Members'
 import { auth } from './lib/auth'
 import type { RouteKey } from './routes'
 
@@ -25,7 +24,7 @@ const routes: Record<RouteKey, React.ReactNode> = {
   dashboard: <DashboardPage />,
   catalog: <CatalogPage />,
   loans: <LoansPage />,
-  members: <MembersPage />,
+  members: <AdminUsers />,
 
   // admin
   adminBooks: <AdminBooks />,
@@ -37,7 +36,7 @@ const routes: Record<RouteKey, React.ReactNode> = {
 
 const PUBLIC_ROUTES: RouteKey[] = ['login', 'register']
 
-const ADMIN_ROUTES: RouteKey[] = ['adminBooks', 'adminAuthors', 'adminLoans', 'adminPenalties', 'adminStats']
+const ADMIN_ROUTES: RouteKey[] = ['members', 'adminBooks', 'adminAuthors', 'adminLoans', 'adminPenalties', 'adminStats']
 
 export function App() {
   const { route, navigate } = useHashRoute<RouteKey>('dashboard')

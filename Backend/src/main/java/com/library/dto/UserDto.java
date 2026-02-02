@@ -1,5 +1,6 @@
 package com.library.dto;
 
+import com.library.model.entity.AppUser;
 import com.library.model.enums.UserRole;
 import com.library.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
@@ -21,4 +22,18 @@ public class UserDto {
     private String blockedReason;
     private LocalDateTime blockedUntil;
     private LocalDateTime createdAt;
+
+    public static UserDto from(AppUser u) {
+        UserDto dto = new UserDto();
+        dto.setId(u.getId());
+        dto.setEmail(u.getEmail());
+        dto.setFirstName(u.getFirstName());
+        dto.setLastName(u.getLastName());
+        dto.setRole(u.getRole());
+        dto.setStatus(u.getStatus());
+        dto.setBlockedReason(u.getBlockedReason());
+        dto.setBlockedUntil(u.getBlockedUntil());
+        dto.setCreatedAt(u.getCreatedAt());
+        return dto;
+    }
 }
