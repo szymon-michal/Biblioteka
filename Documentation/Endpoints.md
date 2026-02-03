@@ -22,7 +22,7 @@ Standardowy wrapper:
 
 ```json
 {
-  "content": [ /* lista elementów */ ],
+  "content": [],
   "page": 0,
   "size": 20,
   "totalElements": 125,
@@ -46,9 +46,9 @@ Query params: `?page=0&size=20&sort=title,asc`
   "email": "reader@example.com",
   "firstName": "Jan",
   "lastName": "Kowalski",
-  "role": "READER",        // READER | ADMIN
-  "status": "ACTIVE",      // ACTIVE | BLOCKED
-  "blockedReason": "string or null",
+  "role": "READER",
+  "status": "ACTIVE",
+  "blockedReason": null,
   "blockedUntil": "2025-12-01T00:00:00Z",
   "createdAt": "2025-11-30T12:00:00Z"
 }
@@ -80,7 +80,7 @@ Query params: `?page=0&size=20&sort=title,asc`
 {
   "id": 100,
   "title": "Władca Pierścieni",
-  "description": "string or null",
+  "description": null,
   "publicationYear": 1954,
   "isbn": "978-1234567890",
   "category": {
@@ -108,7 +108,7 @@ Query params: `?page=0&size=20&sort=title,asc`
   "id": 501,
   "bookId": 100,
   "inventoryCode": "INV-0001",
-  "status": "AVAILABLE",       // AVAILABLE | BORROWED | LOST | DAMAGED | WITHDRAWN
+  "status": "AVAILABLE",
   "shelfLocation": "R1-P3",
   "createdAt": "2025-11-30T12:00:00Z",
   "updatedAt": "2025-11-30T12:00:00Z"
@@ -136,7 +136,7 @@ Query params: `?page=0&size=20&sort=title,asc`
   "loanDate": "2025-11-20T10:00:00Z",
   "dueDate": "2025-12-20T10:00:00Z",
   "returnDate": null,
-  "status": "ACTIVE",          // ACTIVE | RETURNED | OVERDUE | LOST
+  "status": "ACTIVE",
   "extensionsCount": 1
 }
 ```
@@ -155,7 +155,7 @@ Query params: `?page=0&size=20&sort=title,asc`
     "id": 100,
     "title": "Władca Pierścieni"
   },
-  "status": "ACTIVE",          // ACTIVE | CANCELLED | FULFILLED | EXPIRED
+  "status": "ACTIVE",
   "createdAt": "2025-11-25T10:00:00Z",
   "cancelledAt": null,
   "fulfilledAt": null,
@@ -176,7 +176,7 @@ Query params: `?page=0&size=20&sort=title,asc`
   "loanId": 2001,
   "amount": 15.0,
   "reason": "Przekroczony termin zwrotu",
-  "status": "OPEN",             // OPEN | PAID | CANCELLED
+  "status": "OPEN",
   "createdAt": "2025-11-30T12:00:00Z",
   "resolvedAt": null
 }
@@ -187,7 +187,7 @@ Query params: `?page=0&size=20&sort=title,asc`
 ```json
 {
   "token": "jwt-token-string",
-  "user": { /* UserDto bez wrażliwych danych (bez password_hash) */ }
+  "user": { "id": 1, "email": "user@example.com" }
 }
 ```
 
@@ -241,7 +241,7 @@ Rejestracja czytelnika (`role=READER`).
 ```json
 {
   "token": "jwt-token",
-  "user": { /* UserDto */ }
+  "user": {}
 }
 ```
 

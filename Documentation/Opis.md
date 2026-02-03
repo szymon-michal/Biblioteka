@@ -2,7 +2,7 @@
 ## 1. Opis projektu – założenia projektowe (biblioteka)
 
 System to webowa aplikacja do obsługi biblioteki (książki + użytkownicy + wypożyczenia).
-Backend: Java (Spring / JPA), frontend: HTML5 + JS ( React/Angular), baza: PostgreSQL.
+Backend: Java (Spring / JPA), frontend: React, baza: MySQL.
 
 ### Główne cele systemu
 
