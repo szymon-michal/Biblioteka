@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { Box, Card, CardContent, Typography, TextField, Button, Alert, Stack, Divider } from '@mui/material'
+import { Box, Card, CardContent, Typography, TextField, Button, Alert, Stack, Divider, InputAdornment, IconButton } from '@mui/material'
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import { apiFetch } from '../lib/api'
 import { config } from '../lib/config'
 
@@ -8,9 +10,20 @@ export function RegisterPage(props: { onSuccess?: () => void; onGoToLogin?: () =
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+
+  function getPasswordError(pwRaw: string): string | null {
+    const pw = pwRaw.trim()
+    if (!pw) return null
+    const hasMinLen = pw.length >= 8
+    const hasUpper = /[A-Z]/.test(pw)
+    const hasSpecial = /[^A-Za-z0-9]/.test(pw)
+    if (hasMinLen && hasUpper && hasSpecial) return null
+    return 'Hasło musi mieć co najmniej 8 znaków, zawierać 1 wielką literę i 1 znak specjalny.'
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,6 +40,13 @@ export function RegisterPage(props: { onSuccess?: () => void; onGoToLogin?: () =
     if (!payload.firstName || !payload.lastName || !payload.email || !payload.password) {
       setLoading(false)
       setError('Imię, nazwisko, email i hasło są wymagane.')
+      return
+    }
+
+    const passwordError = getPasswordError(payload.password)
+    if (passwordError) {
+      setLoading(false)
+      setError(passwordError)
       return
     }
 
@@ -96,10 +116,24 @@ export function RegisterPage(props: { onSuccess?: () => void; onGoToLogin?: () =
                 <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" fullWidth />
                 <TextField
                   label="Hasło"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
+                  helperText="Min. 8 znaków, 1 wielka litera, 1 znak specjalny."
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={showPassword ? 'Ukryj hasło' : 'Pokaż hasło'}
+                          onClick={() => setShowPassword((v) => !v)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                   fullWidth
                 />
 

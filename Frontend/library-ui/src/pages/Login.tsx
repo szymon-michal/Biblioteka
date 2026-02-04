@@ -11,7 +11,11 @@ import {
   Divider,
   Tabs,
   Tab,
+  InputAdornment,
+  IconButton,
 } from '@mui/material'
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import { apiFetch } from '../lib/api'
 import { auth } from '../lib/auth'
 import { config } from '../lib/config'
@@ -21,6 +25,7 @@ type Mode = 'login' | 'change'
 export function LoginPage(props: { onSuccess?: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
   const [loading, setLoading] = useState(false)
@@ -107,8 +112,13 @@ export function LoginPage(props: { onSuccess?: () => void }) {
         await handleChangePassword()
       }
     } catch (e: any) {
-      const backendMsg = e?.details?.email || e?.details?.message || e?.message || 'Blad'
-      setError(backendMsg)
+      const status = e?.response?.status ?? e?.status ?? e?.details?.status
+      if (status === 401) {
+        setError('Błędne hasło.')
+      } else {
+        const backendMsg = e?.details?.email || e?.details?.message || e?.message || 'Blad'
+        setError(backendMsg)
+      }
     } finally {
       setLoading(false)
     }
@@ -158,6 +168,7 @@ export function LoginPage(props: { onSuccess?: () => void }) {
               value={mode}
               onChange={(_, v) => {
                 setMode(v)
+                setShowPassword(false)
                 setError(null)
                 setSuccess(null)
               }}
@@ -182,10 +193,27 @@ export function LoginPage(props: { onSuccess?: () => void }) {
                 />
                 <TextField
                   label={mode === 'login' ? 'Haslo' : 'Stare haslo'}
-                  type="password"
+                  type={mode === 'login' && showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
+                  InputProps={
+                    mode === 'login'
+                      ? {
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                aria-label={showPassword ? 'Ukryj hasło' : 'Pokaż hasło'}
+                                onClick={() => setShowPassword((val) => !val)}
+                                edge="end"
+                              >
+                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }
+                      : undefined
+                  }
                   fullWidth
                 />
 
