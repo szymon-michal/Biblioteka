@@ -257,6 +257,7 @@ export function LoansPage() {
                         columns={cols}
                         loading={loading}
                         disableRowSelectionOnClick
+                        localeText={{ noRowsLabel: 'tu jeszcze nic nie było' }}
                         // ✅ SAFETY: nawet jak gdzieś trafi się null-id, grid nie wybuchnie
                         getRowId={(r) => (r.id != null ? r.id : `tmp-${r.bookCopy?.id ?? "x"}-${r.dueDate ?? "x"}-${Math.random()}`)}
                     />
