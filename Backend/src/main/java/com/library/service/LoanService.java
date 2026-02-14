@@ -9,11 +9,9 @@ import com.library.model.entity.BookCopy;
 import com.library.model.entity.Loan;
 import com.library.model.enums.BookCopyStatus;
 import com.library.model.enums.LoanStatus;
-import com.library.model.enums.ReservationStatus;
 import com.library.repository.AppUserRepository;
 import com.library.repository.BookCopyRepository;
 import com.library.repository.LoanRepository;
-import com.library.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +31,6 @@ import java.util.stream.Collectors;
 public class LoanService {
     private final LoanRepository loanRepository;
     private final BookCopyRepository bookCopyRepository;
-    private final ReservationRepository reservationRepository;
     private final AppUserRepository appUserRepository;
 
     public Page<LoanDto> getUserLoans(Long userId, List<LoanStatus> statuses, Pageable pageable) {
@@ -82,13 +79,6 @@ public class LoanService {
 
         availableCopy.setStatus(BookCopyStatus.BORROWED);
         bookCopyRepository.save(availableCopy);
-
-        reservationRepository.findByUserIdAndBookIdAndStatus(userId, bookId, ReservationStatus.ACTIVE)
-                .ifPresent(reservation -> {
-                    reservation.setStatus(ReservationStatus.FULFILLED);
-                    reservation.setFulfilledAt(LocalDateTime.now());
-                    reservationRepository.save(reservation);
-                });
 
         savedLoan.setUser(userRef);
         savedLoan.setBookCopy(availableCopy);

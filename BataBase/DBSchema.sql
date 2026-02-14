@@ -10,7 +10,6 @@ DROP VIEW IF EXISTS v_loans_per_day;
 DROP VIEW IF EXISTS v_book_popularity_monthly;
 
 DROP TABLE IF EXISTS penalty;
-DROP TABLE IF EXISTS reservation;
 DROP TABLE IF EXISTS loan;
 DROP TABLE IF EXISTS book_copy;
 DROP TABLE IF EXISTS book_author;
@@ -127,30 +126,7 @@ CREATE TABLE loan (
 CREATE UNIQUE INDEX uq_loan_active_copy ON loan (book_copy_id, open_loan);
 
 -- ----------------------------------------
--- 2.8 Rezerwacje książek
--- ----------------------------------------
-CREATE TABLE reservation (
-    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id      BIGINT NOT NULL,
-    book_id      BIGINT NOT NULL,
-    created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status       ENUM('ACTIVE', 'CANCELLED', 'FULFILLED', 'EXPIRED') NOT NULL DEFAULT 'ACTIVE',
-    cancelled_at DATETIME NULL,
-    fulfilled_at DATETIME NULL,
-    expires_at   DATETIME NULL,
-
-    -- Generated flag: 1 tylko dla ACTIVE
-    active_reservation TINYINT(1) AS (CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) STORED,
-
-    CONSTRAINT fk_reservation_user FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_reservation_book FOREIGN KEY (book_id) REFERENCES book(id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- Użytkownik nie może mieć 2 aktywnych rezerwacji tej samej książki
-CREATE UNIQUE INDEX uq_reservation_active_user_book ON reservation (user_id, book_id, active_reservation);
-
--- ----------------------------------------
--- 2.9 Kary / opłaty
+-- 2.8 Kary / opłaty
 -- ----------------------------------------
 CREATE TABLE penalty (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -172,8 +148,6 @@ CREATE INDEX idx_book_title ON book (title);
 CREATE INDEX idx_book_category ON book (category_id);
 CREATE INDEX idx_loan_user ON loan (user_id);
 CREATE INDEX idx_loan_date ON loan (loan_date);
-CREATE INDEX idx_reservation_user_status ON reservation (user_id, status);
-CREATE INDEX idx_reservation_book_status ON reservation (book_id, status);
 
 -- ============================================================
 -- Widoki statystyczne (do wykresów)

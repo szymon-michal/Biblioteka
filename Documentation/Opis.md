@@ -68,14 +68,16 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 
 ## 3. Przypadki użycia – Czytelnik
 
+(Diagramy sekwencji dla kluczowych procesów znajdują się w pliku `SequenceDiagrams.md`)
+
 ### 3.1. Lista podstawowych przypadków użycia (Czytelnik)
 
 1. **Zarejestruj konto**
-2. **Zaloguj się**
+2. **Zaloguj się** (UC01 - patrz `SequenceDiagrams.md`)
 3. **Przeglądaj katalog książek**
 4. **Wyszukaj książkę**
 5. **Wyświetl szczegóły książki**
-6. **Wypożycz książkę**
+6. **Wypożycz książkę** (UC03 - patrz `SequenceDiagrams.md`)
 7. **Zarezerwuj książkę**
 8. **Wyświetl aktualne wypożyczenia**
 9. **Wyświetl historię wypożyczeń**
@@ -156,10 +158,12 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 
 ## 4. Przypadki użycia – Administrator/Bibliotekarz
 
+(Diagramy sekwencji dla procesów administratora znajdują się w pliku `SequenceDiagrams.md`)
+
 ### 4.1. Lista podstawowych przypadków użycia (Administrator)
 
 1. **Zaloguj się do panelu administratora**
-2. **Dodaj nową książkę**
+2. **Dodaj nową książkę** (UC18 - patrz `SequenceDiagrams.md`)
 3. **Edytuj dane książki**
 4. **Usuń książkę / oznacz jako wycofaną**
 5. **Dodaj egzemplarz książki**
@@ -168,8 +172,8 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 8. **Zarejestruj zwrot książki**
 9. **Przeglądaj listę użytkowników**
 10. **Wyświetl dane użytkownika** (w tym aktualne wypożyczenia i historia)
-11. **Zablokuj / odblokuj użytkownika**
-12. **Przeglądaj statystyki wypożyczeń** (np. najczęściej wypożyczane książki, liczba wypożyczeń w miesiącu)
+11. **Zablokuj / odblokuj użytkownika** (UC13 - patrz `SequenceDiagrams.md`)
+12. **Przeglądaj statystyki wypożyczeń** (UC23 - patrz `SequenceDiagrams.md`)
 
 ### 4.2. Przykładowe opisy przypadków użycia – Administrator
 

@@ -61,7 +61,7 @@ public class SecurityConfig {
                             .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                             // authenticated endpoints for logged-in users
-                            .requestMatchers("/api/loans/**", "/api/reservations/**", "/api/penalties/**", "/api/me/**").authenticated()
+                            .requestMatchers("/api/loans/**", "/api/penalties/**", "/api/me/**").authenticated()
 
                             .anyRequest().authenticated()
             )

@@ -30,8 +30,7 @@ Encje wynikają bezpośrednio z przypadków użycia czytelnika i administratora.
 5. **`category`** – kategorie książek (np. „Fantastyka”, „Nauka”) – obsługa hierarchii (parent_id).
 6. **`book_copy`** – fizyczny egzemplarz książki (kod inwentarzowy).
 7. **`loan`** – wypożyczenie egzemplarza dla użytkownika.
-8. **`reservation`** – rezerwacja książki, gdy wszystkie egzemplarze są wypożyczone.
-9. **`penalty`** – zapis kar/obostrzeń za przetrzymanie.
+8. **`penalty`** – zapis kar/obostrzeń za przetrzymanie.
 
 ---
 
@@ -43,7 +42,6 @@ W MySQL używamy typu `VARCHAR` dla kolumn mapowanych jako `ENUM` w Java/JPA (`E
 * **`UserStatus`**: `ACTIVE`, `BLOCKED`
 * **`BookCopyStatus`**: `AVAILABLE`, `BORROWED`, `LOST`, `DAMAGED`, `WITHDRAWN`
 * **`LoanStatus`**: `ACTIVE`, `RETURNED`, `OVERDUE`, `LOST`
-* **`ReservationStatus`**: `ACTIVE`, `CANCELLED`, `FULFILLED`, `EXPIRED`
 * **`PenaltyStatus`**: `OPEN`, `PAID`, `CANCELLED`
 
 ---
@@ -51,23 +49,19 @@ W MySQL używamy typu `VARCHAR` dla kolumn mapowanych jako `ENUM` w Java/JPA (`E
 ## 4. Relacje między encjami (opis ERD)
 
 * `app_user (1) — (N) loan`
-* `app_user (1) — (N) reservation`
 * `app_user (1) — (N) penalty`
 * `book (1) — (N) book_copy`
 * `author (N) — (N) book` przez `book_author`
 * `category (1) — (N) book`
 * `category (1) — (N) category` (hierarchia)
 * `book_copy (1) — (N) loan`
-* `book (1) — (N) reservation`
 * `app_user (1) — (N) loan` (jako twórca wypożyczenia - admin)
 
 Najważniejsze zasady:
 
 * **Wypożyczenie** dotyczy **konkretnego egzemplarza** (`loan.book_copy_id`).
-* **Rezerwacja** dotyczy **tytułu** (książki), nie konkretnego egzemplarza (`reservation.book_id`).
 * W aplikacji i na poziomie bazy (unikalne indeksy) pilnujemy, aby:
-  * jeden egzemplarz nie był równocześnie w dwóch aktywnych wypożyczeniach,
-  * użytkownik nie miał dwóch aktywnych rezerwacji tego samego tytułu.
+  * jeden egzemplarz nie był równocześnie w dwóch aktywnych wypożyczeniach.
 
 ---
 
@@ -205,28 +199,7 @@ CREATE TABLE loan (
 
 ---
 
-### 5.8. Tabela `reservation`
-
-Opis: rezerwacje książki, gdy brak wolnych egzemplarzy.
-
-```sql
-CREATE TABLE reservation (
-    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id         BIGINT NOT NULL,
-    book_id         BIGINT NOT NULL,
-    status          VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-    created_at      DATETIME(6) NOT NULL,
-    cancelled_at    DATETIME(6),
-    fulfilled_at    DATETIME(6),
-    expires_at      DATETIME(6),
-    CONSTRAINT fk_res_user FOREIGN KEY (user_id) REFERENCES app_user(id),
-    CONSTRAINT fk_res_book FOREIGN KEY (book_id) REFERENCES book(id)
-);
-```
-
----
-
-### 5.9. Tabela `penalty`
+### 5.8. Tabela `penalty`
 
 Opis: kary za przetrzymanie książek.
 
@@ -275,7 +248,7 @@ W systemie MySQL widoki mogą być wykorzystywane do generowania raportów dost�
 ### 8.1. Czytelnik
 * **Profil i logowanie** → `app_user`.
 * **Katalog książek** → `book`, `author`, `category`.
-* **Wypożyczenia i Rezerwacje** → `loan`, `reservation`.
+* **Wypożyczenia** → `loan`.
 * **Kary** → `penalty`.
 
 ### 8.2. Administrator
