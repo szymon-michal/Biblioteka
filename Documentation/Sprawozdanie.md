@@ -1,4 +1,5 @@
 
+Wykonali: michał Krzeszowski 245852 oraz Cezary Kaczmarek(228759)
 ## 1. Opis projektu – założenia projektowe (biblioteka)
 
 System to webowa aplikacja do obsługi biblioteki (książki + użytkownicy + wypożyczenia).
@@ -74,14 +75,46 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 2. **Zaloguj się**
 3. **Przeglądaj katalog książek**
 4. **Wyszukaj książkę**
-5. **Wyświetl szczegóły książki**
 6. **Wypożycz książkę**
 7. **Zarezerwuj książkę**
 8. **Wyświetl aktualne wypożyczenia**
 9. **Wyświetl historię wypożyczeń**
 10. **Przedłuż wypożyczenie**
-11. **Edytuj dane profilu**
-12. **Zmień hasło**
+
+#### Diagramy sekwencji – Czytelnik
+
+![UC01 – Zarejestruj konto](DiagramySekwencjiZdarzen/User/UC01.png)
+
+_Rys. UC01 – Zarejestruj konto._
+
+![UC02 – Zaloguj się](DiagramySekwencjiZdarzen/User/UC02.png)
+
+_Rys. UC02 – Zaloguj się._
+
+![UC03 – Przeglądaj katalog książek](DiagramySekwencjiZdarzen/User/UC03.png)
+
+_Rys. UC03 – Przeglądaj katalog książek._
+
+![UC04 – Wyszukaj książkę](DiagramySekwencjiZdarzen/User/UC04.png)
+
+_Rys. UC04 – Wyszukaj książkę._
+
+![UC06 – Wypożycz książkę](DiagramySekwencjiZdarzen/User/UC06.png)
+
+_Rys. UC06 – Wypożycz książkę._
+
+![UC07 – Zarezerwuj książkę](DiagramySekwencjiZdarzen/User/UC07.png)
+
+_Rys. UC07 – Zarezerwuj książkę._
+
+![UC09 – Wyświetl historię wypożyczeń](DiagramySekwencjiZdarzen/User/UC09.png)
+
+_Rys. UC09 – Wyświetl historię wypożyczeń._
+
+![UC10 – Przedłuż wypożyczenie](DiagramySekwencjiZdarzen/User/UC10.png)
+
+_Rys. UC10 – Przedłuż wypożyczenie._
+
 
 ### 3.2. Opisy przypadków użycia – Czytelnik
 
@@ -158,22 +191,43 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 
 ### 4.1. Lista podstawowych przypadków użycia (Administrator)
 
-1. **Zaloguj się do panelu administratora**
-2. **Dodaj nową książkę**
-3. **Edytuj dane książki**
-4. **Usuń książkę / oznacz jako wycofaną**
-5. **Dodaj egzemplarz książki**
-6. **Usuń egzemplarz książki**
-7. **Zarejestruj wypożyczenie** (np. gdy operacja wykonywana jest przy stanowisku bibliotekarza)
-8. **Zarejestruj zwrot książki**
-9. **Przeglądaj listę użytkowników**
-10. **Wyświetl dane użytkownika** (w tym aktualne wypożyczenia i historia)
-11. **Zablokuj / odblokuj użytkownika**
-12. **Przeglądaj statystyki wypożyczeń** (np. najczęściej wypożyczane książki, liczba wypożyczeń w miesiącu)
+1. **Zaloguj się do panelu administratora**(13)
+2. **Dodaj nową książkę**(14)
+4. **Usuń książkę / oznacz jako wycofaną**(16)
+8. **Zarejestruj zwrot książki**(20)
+9. **Przeglądaj listę użytkowników**(21)
+11. **Zablokuj / odblokuj użytkownika**(23)
+
+#### Diagramy sekwencji – Administrator
+
+![UC13 – Zaloguj się do panelu administratora](DiagramySekwencjiZdarzen/Admin/UC13.png)
+
+_Rys. UC13 – Zaloguj się do panelu administratora._
+
+![UC14 – Dodaj nową książkę](DiagramySekwencjiZdarzen/Admin/UC14.png)
+
+_Rys. UC14 – Dodaj nową książkę._
+
+![UC16 – Usuń książkę / oznacz jako wycofaną](DiagramySekwencjiZdarzen/Admin/UC16.png)
+
+_Rys. UC16 – Usuń książkę / oznacz jako wycofaną._
+
+![UC20 – Zarejestruj zwrot książki](DiagramySekwencjiZdarzen/Admin/UC20.png)
+
+_Rys. UC20 – Zarejestruj zwrot książki._
+
+![UC21 – Przeglądaj listę użytkowników](DiagramySekwencjiZdarzen/Admin/UC21.png)
+
+_Rys. UC21 – Przeglądaj listę użytkowników._
+
+![UC23 – Zablokuj / odblokuj użytkownika](DiagramySekwencjiZdarzen/Admin/UC23.png)
+
+_Rys. UC23 – Zablokuj / odblokuj użytkownika._
+
 
 ### 4.2. Przykładowe opisy przypadków użycia – Administrator
 
-**UC-A1 – Dodaj nową książkę**
+**UC13 – Dodaj nową książkę**
 
 * **Aktor:** Administrator
 * **Cel:** Dodać nową pozycję do katalogu biblioteki.
@@ -217,7 +271,7 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 
 ---
 
-**UC-A4 – Przeglądaj statystyki wypożyczeń**
+**UC23 – Przeglądaj statystyki wypożyczeń**
 
 * **Aktor:** Administrator
 * **Cel:** Zobaczyć statystyki biblioteki w ujęciu czasowym.
