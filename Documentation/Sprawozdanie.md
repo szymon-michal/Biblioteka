@@ -1,4 +1,5 @@
 
+Wykonali: michał Krzeszowski 245852 oraz Cezary Kaczmarek(228759)
 ## 1. Opis projektu – założenia projektowe (biblioteka)
 
 System to webowa aplikacja do obsługi biblioteki (książki + użytkownicy + wypożyczenia).
@@ -68,22 +69,52 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 
 ## 3. Przypadki użycia – Czytelnik
 
-(Diagramy sekwencji dla kluczowych procesów znajdują się w pliku `SequenceDiagrams.md`)
-
 ### 3.1. Lista podstawowych przypadków użycia (Czytelnik)
 
 1. **Zarejestruj konto**
-2. **Zaloguj się** (UC01 - patrz `SequenceDiagrams.md`)
+2. **Zaloguj się**
 3. **Przeglądaj katalog książek**
 4. **Wyszukaj książkę**
-5. **Wyświetl szczegóły książki**
-6. **Wypożycz książkę** (UC03 - patrz `SequenceDiagrams.md`)
+6. **Wypożycz książkę**
 7. **Zarezerwuj książkę**
 8. **Wyświetl aktualne wypożyczenia**
 9. **Wyświetl historię wypożyczeń**
 10. **Przedłuż wypożyczenie**
-11. **Edytuj dane profilu**
-12. **Zmień hasło**
+
+#### Diagramy sekwencji – Czytelnik
+
+![UC01 – Zarejestruj konto](DiagramySekwencjiZdarzen/User/UC01.png)
+
+_Rys. UC01 – Zarejestruj konto._
+
+![UC02 – Zaloguj się](DiagramySekwencjiZdarzen/User/UC02.png)
+
+_Rys. UC02 – Zaloguj się._
+
+![UC03 – Przeglądaj katalog książek](DiagramySekwencjiZdarzen/User/UC03.png)
+
+_Rys. UC03 – Przeglądaj katalog książek._
+
+![UC04 – Wyszukaj książkę](DiagramySekwencjiZdarzen/User/UC04.png)
+
+_Rys. UC04 – Wyszukaj książkę._
+
+![UC06 – Wypożycz książkę](DiagramySekwencjiZdarzen/User/UC06.png)
+
+_Rys. UC06 – Wypożycz książkę._
+
+![UC07 – Zarezerwuj książkę](DiagramySekwencjiZdarzen/User/UC07.png)
+
+_Rys. UC07 – Zarezerwuj książkę._
+
+![UC09 – Wyświetl historię wypożyczeń](DiagramySekwencjiZdarzen/User/UC09.png)
+
+_Rys. UC09 – Wyświetl historię wypożyczeń._
+
+![UC10 – Przedłuż wypożyczenie](DiagramySekwencjiZdarzen/User/UC10.png)
+
+_Rys. UC10 – Przedłuż wypożyczenie._
+
 
 ### 3.2. Opisy przypadków użycia – Czytelnik
 
@@ -158,26 +189,45 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 
 ## 4. Przypadki użycia – Administrator/Bibliotekarz
 
-(Diagramy sekwencji dla procesów administratora znajdują się w pliku `SequenceDiagrams.md`)
-
 ### 4.1. Lista podstawowych przypadków użycia (Administrator)
 
-1. **Zaloguj się do panelu administratora**
-2. **Dodaj nową książkę** (UC18 - patrz `SequenceDiagrams.md`)
-3. **Edytuj dane książki**
-4. **Usuń książkę / oznacz jako wycofaną**
-5. **Dodaj egzemplarz książki**
-6. **Usuń egzemplarz książki**
-7. **Zarejestruj wypożyczenie** (np. gdy operacja wykonywana jest przy stanowisku bibliotekarza)
-8. **Zarejestruj zwrot książki**
-9. **Przeglądaj listę użytkowników**
-10. **Wyświetl dane użytkownika** (w tym aktualne wypożyczenia i historia)
-11. **Zablokuj / odblokuj użytkownika** (UC13 - patrz `SequenceDiagrams.md`)
-12. **Przeglądaj statystyki wypożyczeń** (UC23 - patrz `SequenceDiagrams.md`)
+1. **Zaloguj się do panelu administratora**(13)
+2. **Dodaj nową książkę**(14)
+4. **Usuń książkę / oznacz jako wycofaną**(16)
+8. **Zarejestruj zwrot książki**(20)
+9. **Przeglądaj listę użytkowników**(21)
+11. **Zablokuj / odblokuj użytkownika**(23)
+
+#### Diagramy sekwencji – Administrator
+
+![UC13 – Zaloguj się do panelu administratora](DiagramySekwencjiZdarzen/Admin/UC13.png)
+
+_Rys. UC13 – Zaloguj się do panelu administratora._
+
+![UC14 – Dodaj nową książkę](DiagramySekwencjiZdarzen/Admin/UC14.png)
+
+_Rys. UC14 – Dodaj nową książkę._
+
+![UC16 – Usuń książkę / oznacz jako wycofaną](DiagramySekwencjiZdarzen/Admin/UC16.png)
+
+_Rys. UC16 – Usuń książkę / oznacz jako wycofaną._
+
+![UC20 – Zarejestruj zwrot książki](DiagramySekwencjiZdarzen/Admin/UC20.png)
+
+_Rys. UC20 – Zarejestruj zwrot książki._
+
+![UC21 – Przeglądaj listę użytkowników](DiagramySekwencjiZdarzen/Admin/UC21.png)
+
+_Rys. UC21 – Przeglądaj listę użytkowników._
+
+![UC23 – Zablokuj / odblokuj użytkownika](DiagramySekwencjiZdarzen/Admin/UC23.png)
+
+_Rys. UC23 – Zablokuj / odblokuj użytkownika._
+
 
 ### 4.2. Przykładowe opisy przypadków użycia – Administrator
 
-**UC-A1 – Dodaj nową książkę**
+**UC13 – Dodaj nową książkę**
 
 * **Aktor:** Administrator
 * **Cel:** Dodać nową pozycję do katalogu biblioteki.
@@ -221,7 +271,7 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 
 ---
 
-**UC-A4 – Przeglądaj statystyki wypożyczeń**
+**UC23 – Przeglądaj statystyki wypożyczeń**
 
 * **Aktor:** Administrator
 * **Cel:** Zobaczyć statystyki biblioteki w ujęciu czasowym.
@@ -233,4 +283,52 @@ Profil: pracownik biblioteki zarządzający zasobami i użytkownikami.
 * **Warunek końcowy:** Administrator widzi dane w formie tabeli + wykresów.
 
 ---
+
+## 5. Proces Autentykacji i Autoryzacji
+
+Dokument opisuje mechanizmy bezpieczeństwa zaimplementowane w systemie, w tym rejestrację użytkowników, proces logowania oraz generowanie i weryfikację tokenów JWT.
+
+
+### 5.1. Rejestracja Użytkownika
+
+Proces rejestracji pozwala nowym osobom na założenie konta w systemie z domyślną rolą `READER` (Czytelnik).
+
+* **Żądanie:** Klient wysyła dane (`email`, `password`, `firstName`, `lastName`) na endpoint `POST /api/auth/register`.
+* **Walidacja:** System sprawdza, czy podany adres email jest już zajęty w bazie danych.
+* **Bezpieczeństwo Hasła:** Hasło w postaci jawnej **nigdy nie jest zapisywane**. System używa algorytmu `BCrypt` (klasa `PasswordEncoder`) do wygenerowania bezpiecznego hasha.
+* **Tworzenie Encji:** Tworzona jest nowa encja `AppUser` ze statusem `ACTIVE` i aktualną datą utworzenia.
+* **Odpowiedź:** System zwraca dane użytkownika (bez hasła) w formacie `UserDto` z kodem `201 Created`.
+
+### 5.2. Logowanie i Generowanie JWT
+
+Logowanie jest jedynym procesem, w którym użytkownik przesyła swoje hasło. Wynikiem poprawnego logowania jest token JWT (JSON Web Token).
+
+* **Żądanie:** Klient wysyła `email` i `password` na endpoint `POST /api/auth/login`.
+* **Weryfikacja Poświadczeń:**
+    * Pobranie użytkownika z bazy po adresie email.
+    * Porównanie przesłanego hasła z hashem zapisanym w bazie (`passwordEncoder.matches`).
+    * Sprawdzenie, czy konto nie jest zablokowane (`status == 'BLOCKED'`).
+* **Generowanie Tokena:**
+    * Jeśli dane są poprawne, `JwtTokenProvider` tworzy token JWT.
+    * **Algorytm:** HMAC SHA256 (`HS256`).
+    * **Claimy (Zawartość):** `sub` (Subject, ID użytkownika), `email`, `role`, `iat`, `exp` (czas wygaśnięcia, domyślnie 24h).
+* **Odpowiedź:** Klient otrzymuje obiekt `AuthResponse` zawierający token oraz uproszczone dane użytkownika.
+
+### 5.3. Autoryzacja Żądań (JWT Flow)
+
+Po zalogowaniu, klient musi dołączać token do każdego chronionego zapytania.
+
+**Przekazywanie Tokena:**
+Klient umieszcza token w nagłówku HTTP: `Authorization: Bearer <twój_token_jwt>`.
+
+**Proces weryfikacji na Backendzie (`JwtAuthenticationFilter`):**
+1.  **Przechwycenie:** Filtr wyciąga ciąg znaków po słowie `Bearer ` z nagłówka `Authorization`.
+2.  **Walidacja:**
+    * Sprawdzenie podpisu cyfrowego tokena przy użyciu klucza tajnego (`jwtSecret`).
+    * Sprawdzenie, czy token nie wygasł.
+3.  **Ekstrakcja Danych:** Pobranie `userId` oraz `role` z wnętrza tokena.
+4.  **Kontekst Bezpieczeństwa:**
+    * System mapuje rolę z bazy na format Spring Security (dodanie prefixu `ROLE_`, np. `ROLE_ADMIN`).
+    * Ustawienie obiektu `Authentication` w `SecurityContextHolder`.
+
 
